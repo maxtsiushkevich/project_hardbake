@@ -5,18 +5,17 @@ import uuid
 from starlette import status
 from fastapi import HTTPException
 
+from api.core.tasks import tasks
 from api.schemas.sniffer import StartSniffDetails, StopSniffDetails
 from api.services.sniffer import run_async_sniffer, stop_async_sniffer
 
 router = APIRouter(prefix="/sniffer", tags=["Sniffer"])
 
-tasks = dict()
-
 
 @router.put("/start-sniff", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
 async def start_sniff(iface: str):
     sniff_id = str(uuid.uuid4())
-    sniff_details = {"sniff_id": str(uuid.uuid4()), "start_at": datetime.now().isoformat(), "interface": iface}
+    sniff_details = {"sniff_id": sniff_id, "start_at": datetime.now().isoformat(), "interface": iface}
     run_async_sniffer(sniff_id, iface)
     return StartSniffDetails(**sniff_details)
 
@@ -27,7 +26,7 @@ async def stop_sniff(sniff_id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No task {sniff_id} found.")
     if not stop_async_sniffer(sniff_id):
         raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail=f"Task {sniff_id} already stopped.")
-    stop_sniff_details = {"sniff_id": str(uuid.uuid4()), "stop_at": datetime.now().isoformat()}
+    stop_sniff_details = {"sniff_id": sniff_id, "stop_at": datetime.now().isoformat()}
     return StopSniffDetails(**stop_sniff_details)
 
 
