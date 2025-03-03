@@ -1,0 +1,2 @@
+tasks = dict()
+sniffers = dict()
