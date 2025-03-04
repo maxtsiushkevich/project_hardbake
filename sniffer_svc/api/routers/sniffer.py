@@ -5,8 +5,9 @@ from uuid import UUID, uuid4
 from starlette import status
 from fastapi import HTTPException
 
-from api.schemas.sniffer import StartSniffDetails, StopSniffDetails, SniffDetails, SniffStatus
-from api.services.redis_service import save_sniff_details, update_sniff_status, get_sniff
+from api.schemas.sniffer import StartSniffDetails, StopSniffDetails, SniffDetails
+from api.services.redis_service import save_sniff_details, get_sniff, get_all_sniffs_redis, \
+    stop_sniff_redis
 from api.services.sniffer_service import run_async_sniffer, stop_async_sniffer, get_task_ids
 
 router = APIRouter(prefix="/sniffer", tags=["Sniffer"])
@@ -30,37 +31,35 @@ async def stop_sniff(sniff_id: str):
         raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail=f"Task {sniff_id} already stopped.")
 
     stop_details = StopSniffDetails(sniff_id=UUID(sniff_id), stop_at=datetime.now())
-    await update_sniff_status(sniff_id, SniffStatus.Stopped)
+    await stop_sniff_redis(sniff_id)
     return stop_details
 
-
-@router.put("/pause-sniff")
-async def pause_sniff(sniff_id: str) -> dict[str, str]:
-    # TODO
-    return {
-        "status": "paused",
-        "sniff_id": sniff_id,
-    }
-
-
-@router.put("/resume-sniff")
-async def resume_sniff(sniff_id: str) -> dict[str, str]:
-    # TODO
-    return {
-        "status": "resumed",
-        "sniff_id": sniff_id,
-    }
-
-
-@router.get("/all")
-async def get_all_sniff_tasks() -> dict[str, list[str]]:
+@router.get("/active-ids")
+async def get_active_sniff_task_ids() -> dict[str, list[str]]:
     task_ids = await get_task_ids()
     if not task_ids:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT, detail="No tasks found.")
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return {"task_ids": task_ids}
 
 
 @router.get("/status/{task_id}")
 async def get_sniff_details(task_id: str):
     details = await get_sniff(task_id)
+    if not details:
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
     return details
+
+@router.get("/all")
+async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = None) -> list[SniffDetails]:
+
+    if start_pos is not None and start_pos < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid start position.")
+    if quantity is not None and quantity < 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid quantity.")
+
+    sniffs = await get_all_sniffs_redis(start_pos, quantity)
+
+    if not sniffs:
+        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+
+    return sniffs

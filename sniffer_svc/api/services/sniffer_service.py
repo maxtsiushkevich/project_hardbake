@@ -9,6 +9,9 @@ def packet_summary(packet):
     print(summary)
 
 
+def send_packet_to_rabbitmq(packet):
+    pass
+
 async def sniff_task(task_id: str, iface: str):
     sniffer = AsyncSniffer(iface=iface, prn=packet_summary)
     sniffer.start()
