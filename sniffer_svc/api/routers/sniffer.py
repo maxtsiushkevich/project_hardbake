@@ -5,42 +5,51 @@ from uuid import UUID, uuid4
 from starlette import status
 from fastapi import HTTPException
 
+from api.exceptions.exceptions import SniffNotFoundError
 from api.schemas.sniffer import StartSniffDetails, StopSniffDetails, SniffDetails
-from api.services.redis_service import save_sniff_details, get_sniff, get_all_sniffs_redis, \
-    stop_sniff_redis
-from api.services.sniffer_service import run_async_sniffer, stop_async_sniffer, get_task_ids
+from api.repository.redis_repository import get_sniff, get_all_sniffs_redis, RedisConnection, RedisRepository
+from api.services.sniffer_service import SnifferService
 
 router = APIRouter(prefix="/sniffer", tags=["Sniffer"])
 
 
-@router.put("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
+@router.post("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
 async def start_sniff(iface: str):
-    sniff_id = uuid4()
-
-    start_details = StartSniffDetails(sniff_id=sniff_id, start_at=datetime.now(), interface=iface)
-
-    await save_sniff_details(start_details)
-
-    await run_async_sniffer(sniff_id, iface)
-    return start_details
+    async with RedisConnection() as connection:
+        conn = connection.redis
+        redis = RedisRepository(conn)
+        sniffer_service = SnifferService(redis)
+        result = await sniffer_service.start(iface)
+    return result
 
 
-@router.put("/stop", response_model=StopSniffDetails)
+@router.patch("/stop", response_model=StopSniffDetails)
 async def stop_sniff(sniff_id: UUID):
-    if not await stop_async_sniffer(sniff_id):
-        raise HTTPException(status_code=status.HTTP_208_ALREADY_REPORTED, detail=f"Task {sniff_id} already stopped.")
+    async with RedisConnection() as connection:
+        conn = connection.redis
+        redis = RedisRepository(conn)
+        sniffer_service = SnifferService(redis)
 
-    stop_details = StopSniffDetails(sniff_id=sniff_id, stop_at=datetime.now())
-    await stop_sniff_redis(sniff_id)
-    return stop_details
+        try:
+            await sniffer_service.stop(sniff_id)
+        except SniffNotFoundError:
+            raise HTTPException(
+                status_code=404, detail=f"Sniff {sniff_id} not found"
+            )
+
+    return StopSniffDetails(sniff_id=sniff_id, stop_at=datetime.now())
 
 
 @router.get("/active")
 async def get_active_sniff_task_ids() -> dict[str, list[UUID]]:
-    task_ids = await get_task_ids()
-    if not task_ids:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-    return {"task_ids": task_ids}
+    async with RedisConnection() as connection:
+        conn = connection.redis
+        redis = RedisRepository(conn)
+        sniffer_service = SnifferService(redis)
+        result = await sniffer_service.get_active_sniffs()
+        if not result:
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+    return {"task_ids": result}
 
 
 @router.get("/all")

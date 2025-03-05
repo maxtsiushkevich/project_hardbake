@@ -7,7 +7,6 @@ class Interface(BaseModel):
     broadcast: str
     p2p: bool
 
-
 # import ipaddress
 #
 # def check(ip) -> bool:

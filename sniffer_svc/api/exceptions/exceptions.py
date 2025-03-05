@@ -1,3 +1,2 @@
 class SniffNotFoundError(Exception):
     pass
-

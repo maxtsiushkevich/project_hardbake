@@ -6,19 +6,23 @@ from uuid import UUID
 from datetime import datetime
 from typing import Optional
 
+
 class SniffStatus(Enum):
     Running = "Running"
     Stopped = "Stopped"
     Crashed = "Crashed"
+
 
 class StartSniffDetails(BaseModel):
     interface: str
     sniff_id: UUID
     start_at: datetime
 
+
 class StopSniffDetails(BaseModel):
     sniff_id: UUID
     stop_at: datetime
+
 
 class SniffDetails(BaseModel):
     interface: str
