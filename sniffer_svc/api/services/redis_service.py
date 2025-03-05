@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from api.external_services.redis_config import get_redis_connection
 from api.schemas.sniffer import SniffDetails, StartSniffDetails, SniffStatus
 from datetime import datetime
@@ -15,14 +17,14 @@ async def save_sniff_details(details: StartSniffDetails):
     await conn.set(str(details.sniff_id), data.model_dump_json())
 
 
-async def get_sniff(sniff_id: str) -> SniffDetails | None:
-    data = await conn.get(sniff_id)
+async def get_sniff(sniff_id: UUID) -> SniffDetails | None:
+    data = await conn.get(str(sniff_id))
     if data:
         return SniffDetails.model_validate_json(data)
     return None
 
 
-async def update_sniff_status(sniff_id: str, new_status: SniffStatus):
+async def update_sniff_status(sniff_id: UUID, new_status: SniffStatus):
     sniff_details = await get_sniff(sniff_id)
     if not sniff_details:
         raise ValueError(f"Sniff details for ID {sniff_id} not found.")
@@ -31,7 +33,7 @@ async def update_sniff_status(sniff_id: str, new_status: SniffStatus):
     await conn.set(str(sniff_id), sniff_details.model_dump_json())
 
 
-async def stop_sniff_redis(sniff_id: str):
+async def stop_sniff_redis(sniff_id: UUID):
     sniff_details = await get_sniff(sniff_id)
     if not sniff_details:
         raise ValueError(f"No sniff with {sniff_id}.")

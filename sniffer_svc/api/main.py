@@ -5,12 +5,14 @@ from api.routers.sniffer import router as sniffer_router
 from api.routers.interface import router as interface_router
 from api.external_services.redis_config import get_redis_connection
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     conn = get_redis_connection()
     await conn.flushdb()
     yield
     await conn.close()
+
 
 app = FastAPI(lifespan=lifespan)
 

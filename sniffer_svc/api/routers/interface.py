@@ -33,6 +33,6 @@ def get_interface_family(family):
     families = {
         socket.AF_INET: "ipv4",
         socket.AF_INET6: "ipv6",
-        socket.AF_LINK: "mac"
+        socket.AF_NETLINK: "mac"
     }
     return families.get(family, "unknown")
