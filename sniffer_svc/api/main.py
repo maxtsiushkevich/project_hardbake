@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from contextlib import asynccontextmanager
 from api.routers.sniffer import router as sniffer_router
 from api.routers.interface import router as interface_router
-from api.external_services.redis_config import get_redis_connection
+from api.repository.redis_repository import get_redis_connection
 
 
 @asynccontextmanager
