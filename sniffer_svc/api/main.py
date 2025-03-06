@@ -5,9 +5,12 @@ from api.routers.sniffer import router as sniffer_router
 from api.routers.interface import router as interface_router
 from api.repository.redis_repository import get_redis_connection
 
+from dotenv import load_dotenv
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    load_dotenv()
     conn = get_redis_connection()
     await conn.flushdb()
     yield
