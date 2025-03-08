@@ -1,38 +1,30 @@
-from fastapi import APIRouter
-import psutil
-import socket
+from fastapi import APIRouter, HTTPException
+from api.services.interface_service import NetworkInterfaces, NetworkInterface
 
 router = APIRouter(prefix="/interfaces", tags=["Interfaces"])
 
 
 @router.get("/")
 async def get_all_interfaces() -> dict[str, list[str]]:
-    interfaces = psutil.net_if_addrs()
-    return {"interfaces": list(interfaces.keys())}
+    names = NetworkInterfaces.get_interfaces_name_list()
+    if not names:
+        raise HTTPException(status_code=404, detail="Interfaces not found")
+    return {"interfaces": names}
 
 
 @router.get("/{iface}")
-async def get_interface_description(iface: str) -> dict[str, dict[str, str]]:
-    interfaces = psutil.net_if_addrs()
-
-    result = dict()
-
-    for addr in interfaces[iface]:
-        family = get_interface_family(addr.family)
-        result[family] = {
-            "address": addr.address,
-            "netmask": addr.netmask or "",
-            "broadcast": addr.broadcast or "",
-            "p2p": addr.ptp or ""
-        }
-
-    return result
+async def get_interface_description(iface: str):
+    interface = NetworkInterface(name=iface).to_dict()
+    return interface
 
 
-def get_interface_family(family):
-    families = {
-        socket.AF_INET: "ipv4",
-        socket.AF_INET6: "ipv6",
-        socket.AF_NETLINK: "mac"
-    }
-    return families.get(family, "unknown")
+@router.get("/{iface}/info")
+async def get_interface_description(iface: str):
+    info = NetworkInterface(name=iface).get_info()
+    return info
+
+
+@router.get("/{iface}/stat")
+async def get_interface_description(iface: str):
+    stats = NetworkInterface(name=iface).stats
+    return stats
