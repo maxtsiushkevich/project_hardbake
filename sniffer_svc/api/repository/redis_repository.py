@@ -55,6 +55,7 @@ class RedisRepository:
         sniff_details.status = SniffStatus.Stopped
         sniff_details.stop_at = datetime.now()
         await self.connection.set(str(sniff_id), sniff_details.model_dump_json())
+        return sniff_details
 
     async def get_sniff(self, sniff_id: UUID) -> SniffDetails | None:
         data = await self.connection.get(str(sniff_id))

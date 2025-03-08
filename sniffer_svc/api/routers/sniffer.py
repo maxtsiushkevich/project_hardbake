@@ -33,16 +33,13 @@ async def stop_sniff(sniff_id: UUID):
         sniffer_service = SnifferService(redis)
 
         try:
-            await sniffer_service.stop(sniff_id)
+            sniff = await sniffer_service.stop(sniff_id)
         except SniffNotFoundError:
             raise HTTPException(
                 status_code=404, detail=f"Sniff {sniff_id} not found"
             )
 
-    return {
-        "sniff_id": sniff_id,
-        "status": "Successful"
-    }
+    return sniff
 
 
 @router.get("/active")

@@ -45,9 +45,10 @@ class SnifferService:
                 pass
             del tasks[task_id]
 
-        await self.redis.stop_sniff(task_id)
+        result = await self.redis.stop_sniff(task_id)
+        return result
 
-    async def get_active(self) -> list[UUID]:
+    async def get_active(self):
         result = await self.redis.get_active()
         return result
 
