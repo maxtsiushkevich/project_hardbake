@@ -1,5 +1,5 @@
-import json
 import os
+import pickle
 
 import redis.asyncio as redis
 from uuid import UUID
@@ -8,17 +8,15 @@ from api.schemas.sniffer import SniffDetails, StartSniffDetails, SniffStatus
 from datetime import datetime
 
 
-def get_redis_connection():
-    host = os.getenv("REDIS_HOST")
-    port = os.getenv("REDIS_PORT")
-    return redis.Redis(host=host, port=int(port), db=0)
-
-
 class RedisConnection:
     def __init__(self):
         host = os.getenv("REDIS_HOST")
         port = os.getenv("REDIS_PORT")
         self.redis = redis.Redis(host=host, port=int(port), db=0)
+
+    @property
+    def connection(self):
+        return self.redis
 
     async def __aenter__(self):
         return self
@@ -38,14 +36,14 @@ class RedisRepository:
             start_at=details.start_at,
             status=SniffStatus.Running,
         )
-        await self.connection.set(str(details.sniff_id), data.model_dump_json())
+        await self.connection.set(str(details.sniff_id), pickle.dumps(data))
 
     async def update_sniff(self, sniff_id: UUID, new_status: SniffStatus):
         sniff_details = await self.get_sniff(sniff_id)
         if not sniff_details:
             raise ValueError(f"Sniff details for ID {sniff_id} not found.")
         sniff_details.status = new_status
-        await self.connection.set(str(sniff_id), sniff_details.model_dump_json())
+        await self.connection.set(str(sniff_id), pickle.dumps(sniff_details))
 
     async def stop_sniff(self, sniff_id: UUID):
         sniff_details = await self.get_sniff(sniff_id)
@@ -54,26 +52,25 @@ class RedisRepository:
 
         sniff_details.status = SniffStatus.Stopped
         sniff_details.stop_at = datetime.now()
-        await self.connection.set(str(sniff_id), sniff_details.model_dump_json())
+        await self.connection.set(str(sniff_id), pickle.dumps(sniff_details))
         return sniff_details
 
     async def get_sniff(self, sniff_id: UUID) -> SniffDetails | None:
         data = await self.connection.get(str(sniff_id))
         if data:
-            return SniffDetails.model_validate_json(data)
+            return pickle.loads(data)
         return None
 
-    async def get_active(self):
-
-        keys =  await self.connection.keys("*")
-
+    async def get_by_status(self, status: SniffStatus):
+        keys = await self.connection.keys("*")
         active_sniffs = []
 
         for key in keys:
             data = await self.connection.get(key)
-            obj = json.loads(data)
-            if obj.get("status") == "Running":
-                active_sniffs.append({key: obj})
+            if data:
+                sniff_details = pickle.loads(data)
+                if sniff_details.status == status:
+                    active_sniffs.append(sniff_details)
 
         return active_sniffs
 
@@ -87,11 +84,11 @@ class RedisRepository:
         elif quantity is not None:
             keys = keys[:quantity]
 
-        sniffs = list()
+        sniffs = []
         for key in keys:
             data = await self.connection.get(key)
             if data:
-                sniffs.append(SniffDetails.model_validate_json(data))
+                sniffs.append(pickle.loads(data))
 
         return sniffs
 
@@ -101,4 +98,4 @@ class RedisRepository:
             raise ValueError(f"Sniff details for ID {sniff_id} not found.")
 
         sniff_details.status = new_status
-        await self.connection.set(str(sniff_id), sniff_details.model_dump_json())
+        await self.connection.set(str(sniff_id), pickle.dumps(sniff_details))
