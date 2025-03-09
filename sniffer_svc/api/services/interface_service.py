@@ -1,6 +1,8 @@
 import psutil
 import socket
 
+from api.exceptions.exceptions import InterfaceNotFoundError
+
 
 class NetworkInterface:
 
@@ -11,6 +13,9 @@ class NetworkInterface:
 
     def _get_info(self):
         if_info = psutil.net_if_addrs().get(self.name)
+
+        if not if_info:
+            raise InterfaceNotFoundError
 
         result = {}
         for addr in if_info:
@@ -27,15 +32,18 @@ class NetworkInterface:
     def _get_stats(self):
         stats = psutil.net_io_counters(pernic=True).get(self.name)
 
+        if not stats:
+            raise InterfaceNotFoundError
+
         return {
-            'Bytes Sent': stats.bytes_sent,
-            'Bytes Received': stats.bytes_recv,
-            'Packets Sent': stats.packets_sent,
-            'Packets Received': stats.packets_recv,
-            'Errors In': stats.errin,
-            'Errors Out': stats.errout,
-            'Dropped In': stats.dropin,
-            'Dropped Out': stats.dropout,
+            'bytes_sent': stats.bytes_sent,
+            'bytes_received': stats.bytes_recv,
+            'packets_sent': stats.packets_sent,
+            'packets_received': stats.packets_recv,
+            'errors_in': stats.errin,
+            'errors_out': stats.errout,
+            'dropped_in': stats.dropin,
+            'dropped_out': stats.dropout,
         }
 
     def get_info(self):

@@ -1,4 +1,6 @@
 from fastapi import APIRouter, HTTPException
+
+from api.exceptions.exceptions import InterfaceNotFoundError
 from api.services.interface_service import NetworkInterfaces, NetworkInterface
 from api.schemas.interface import NetworkInterfaceSchema, InterfacesListResponse, InterfaceInfo, InterfaceStats
 
@@ -23,17 +25,26 @@ async def get_interfaces():
 
 @router.get("/{iface}", response_model=NetworkInterfaceSchema)
 async def get_interface_description(iface: str):
-    interface = NetworkInterface(name=iface).to_dict()
+    try:
+        interface = NetworkInterface(name=iface).to_dict()
+    except InterfaceNotFoundError:
+        raise HTTPException(status_code=404, detail="Interface not found")
     return interface
 
 
 @router.get("/{iface}/info", response_model=InterfaceInfo)
 async def get_interface_info(iface: str):
-    info = NetworkInterface(name=iface).get_info()
+    try:
+        info = NetworkInterface(name=iface).get_info()
+    except InterfaceNotFoundError:
+        raise HTTPException(status_code=404, detail="Interface not found")
     return info
 
 
 @router.get("/{iface}/stat", response_model=InterfaceStats)
 async def get_interface_stats(iface: str):
-    stats = NetworkInterface(name=iface).stats
+    try:
+        stats = NetworkInterface(name=iface).stats
+    except InterfaceNotFoundError:
+        raise HTTPException(status_code=404, detail="Interface not found")
     return stats
