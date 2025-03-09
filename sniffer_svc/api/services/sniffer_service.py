@@ -26,21 +26,21 @@ class SnifferService:
         except Exception as e:
             await self.redis.update_sniff(sniff_id, SniffStatus.Crashed)
 
-    async def stop(self, task_id: UUID):
-        sniffer = sniffers.get(task_id)
+    async def stop(self, sniff_id: UUID):
+        sniffer = sniffers.get(sniff_id)
 
         if not sniffer:
-            raise SniffNotFoundError(f"Sniffer {task_id} not found")
+            raise SniffNotFoundError(f"Sniffer {sniff_id} not found")
 
         if sniffer:
             sniffer.stop()
-            del sniffers[task_id]
+            del sniffers[sniff_id]
 
-        result = await self.redis.stop_sniff(task_id)
+        result = await self.redis.stop_sniff(sniff_id)
         return result
 
-    async def get_active(self):
-        result = await self.redis.get_active()
+    async def get_by_status(self, status: SniffStatus):
+        result = await self.redis.get_by_status(status)
         return result
 
     async def get_all(self, start_pos: int | None = None, quantity: int | None = None):

@@ -11,11 +11,11 @@ def packet_summary(packet):
     print(summary)
 
 
-async def sniff_task(task_id: UUID, iface: str, redis: RedisRepository):
+async def sniff_task(sniff_id: UUID, iface: str, redis: RedisRepository):
     try:
         sniffer = AsyncSniffer(iface=iface, prn=packet_summary)
         sniffer.start()
-        sniffers[task_id] = sniffer
+        sniffers[sniff_id] = sniffer
     except Exception as e:
-        await redis.update_sniff_status(task_id, SniffStatus.Crashed)
+        await redis.update_sniff_status(sniff_id, SniffStatus.Crashed)
         raise
