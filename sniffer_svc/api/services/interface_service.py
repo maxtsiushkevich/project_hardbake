@@ -54,8 +54,12 @@ class NetworkInterface:
 
 class NetworkInterfaces:
     @staticmethod
-    def get_interfaces():
+    def get_interfaces() -> list[NetworkInterface]:
         return [NetworkInterface(name) for name in psutil.net_if_addrs().keys()]
+
+    @staticmethod
+    def get_interfaces_json() -> list[dict[str, str]]:
+        return [NetworkInterface(name).to_dict() for name in psutil.net_if_addrs().keys()]
 
     @staticmethod
     def get_interfaces_name_list() -> list[str]:
