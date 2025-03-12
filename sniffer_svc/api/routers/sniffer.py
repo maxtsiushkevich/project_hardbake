@@ -31,20 +31,6 @@ async def stop_sniff(sniff_id: UUID):
 
     return SniffDetails(**sniff.dict())
 
-
-@router.get("/{status}", response_model=SniffListResponse)
-async def get_sniffs_by_status(target_status: SniffStatus):
-    async with RedisConnection() as connection:
-        redis = RedisRepository(connection.redis)
-        sniffer_service = SnifferService(redis)
-
-        results = await sniffer_service.get_by_status(target_status)
-        if not results:
-            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
-
-    return SniffListResponse(sniffs=results, total=len(results))
-
-
 @router.get("/all", response_model=SniffListResponse)
 async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = None):
     async with RedisConnection() as connection:
@@ -69,3 +55,15 @@ async def get_sniff_details(task_id: UUID):
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
     return SniffDetails(**result.dict())
+
+@router.get("/status/{status}", response_model=SniffListResponse)
+async def get_sniffs_by_status(target_status: SniffStatus):
+    async with RedisConnection() as connection:
+        redis = RedisRepository(connection.redis)
+        sniffer_service = SnifferService(redis)
+
+        results = await sniffer_service.get_by_status(target_status)
+        if not results:
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+
+    return SniffListResponse(sniffs=results, total=len(results))
