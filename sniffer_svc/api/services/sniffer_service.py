@@ -16,10 +16,10 @@ class SnifferService:
     def __init__(self, redis: RedisRepository):
         self.redis = redis
 
-    async def start(self, iface: str):
+    async def start(self, iface: str, filters: str | None = None):
         sniff_id = uuid4()
         try:
-            asyncio.create_task(sniff_task(sniff_id, iface, self.redis))
+            asyncio.create_task(sniff_task(sniff_id=sniff_id, iface=iface, filters=filters, redis=self.redis))
             details = StartSniffDetails(sniff_id=sniff_id, start_at=datetime.now(), interface=iface)
             await self.redis.save_sniff(details)
             return details

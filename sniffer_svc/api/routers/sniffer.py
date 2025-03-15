@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status
 from uuid import UUID
 from api.exceptions.exceptions import SniffNotFoundError
-from api.schemas.sniffer import SniffListResponse, StartSniffDetails, SniffDetails, SniffStatus
+from api.schemas.sniffer import SniffListResponse, StartSniffDetails, SniffDetails, SniffStatus, SniffFilter
 from api.repository.redis_repository import RedisConnection, RedisRepository
 from api.services.sniffer_service import SnifferService
 
@@ -9,11 +9,13 @@ router = APIRouter(prefix="/sniffer", tags=["Sniffer"])
 
 
 @router.post("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
-async def start_sniff(iface: str):
+async def start_sniff(iface: str, filter_params: SniffFilter | None = None):
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
-        result = await sniffer_service.start(iface)
+
+        bpf_filter = filter_params.to_bpf() if filter_params else None
+        result = await sniffer_service.start(iface, bpf_filter)
 
     return StartSniffDetails(**result.dict())
 
@@ -30,6 +32,7 @@ async def stop_sniff(sniff_id: UUID):
             raise HTTPException(status_code=404, detail=f"Sniff {sniff_id} not found")
 
     return SniffDetails(**sniff.dict())
+
 
 @router.get("/all", response_model=SniffListResponse)
 async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = None):
@@ -55,6 +58,7 @@ async def get_sniff_details(task_id: UUID):
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
     return SniffDetails(**result.dict())
+
 
 @router.get("/status/{status}", response_model=SniffListResponse)
 async def get_sniffs_by_status(target_status: SniffStatus):
