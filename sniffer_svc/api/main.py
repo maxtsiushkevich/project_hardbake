@@ -4,13 +4,14 @@ from contextlib import asynccontextmanager
 from api.routers.sniffer import router as sniffer_router
 from api.routers.interface import router as interface_router
 from api.repository.redis_repository import RedisConnection
-from api.monitoring.prometheus import metrics
+from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
+
+load_dotenv()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    load_dotenv()
     conn = RedisConnection().connection
     await conn.flushdb()
     yield
@@ -18,6 +19,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Sniffer service')
+
+instrumentator.instrument(app).expose(app)
 
 app.mount("/metrics", metrics)
 
