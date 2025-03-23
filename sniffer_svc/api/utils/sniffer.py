@@ -53,7 +53,7 @@ class RabbitMQClient:
 rabbit_client = RabbitMQClient()
 
 
-def packet_summary(packet):
+def packet_operator(packet):
     raw_packet = bytes(packet)
     print(raw_packet)
     rabbit_client.send(raw_packet)
@@ -61,9 +61,9 @@ def packet_summary(packet):
 
 async def sniff_task(sniff_id: UUID, iface: str, filters: str | None, redis: RedisRepository):
     try:
-        sniffer = AsyncSniffer(iface=iface, prn=packet_summary, filter=filters)
+        sniffer = AsyncSniffer(iface=iface, prn=packet_operator, filter=filters)
         sniffer.start()
         sniffers[sniff_id] = sniffer
     except Exception as e:
-        await redis.update_sniff_status(sniff_id, SniffStatus.Crashed)
+        await redis.update_sniff(sniff_id, SniffStatus.Crashed)
         raise

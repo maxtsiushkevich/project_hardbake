@@ -91,11 +91,3 @@ class RedisRepository:
                 sniffs.append(pickle.loads(data))
 
         return sniffs
-
-    async def update_sniff_status(self, sniff_id: UUID, new_status: SniffStatus):
-        sniff_details = await self.get_sniff(sniff_id)
-        if not sniff_details:
-            raise ValueError(f"Sniff details for ID {sniff_id} not found.")
-
-        sniff_details.status = new_status
-        await self.connection.set(str(sniff_id), pickle.dumps(sniff_details))
