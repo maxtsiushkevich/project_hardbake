@@ -8,8 +8,8 @@ class NetworkInterface:
 
     def __init__(self, name):
         self.name = name
-        self.info = self._get_info()
-        self.stats = self._get_stats()
+        self._info = self._get_info()
+        self._stats = self._get_stats()
 
     def _get_info(self):
         if_info = psutil.net_if_addrs().get(self.name)
@@ -48,19 +48,26 @@ class NetworkInterface:
 
     @property
     def info(self):
-        return self.info
+        return self._info
 
     @property
     def stats(self):
-        return self.stats
+        return self._stats
 
     def to_dict(self):
         return {
             'name': self.name,
-            'info': self.info,
-            'stats': self.stats
+            'info': self._info,
+            'stats': self._stats
         }
 
+    @info.setter
+    def info(self, value):
+        self._info = value
+
+    @stats.setter
+    def stats(self, value):
+        self._stats = value
 
 
 class NetworkInterfacesService:
