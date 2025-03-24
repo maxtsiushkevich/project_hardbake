@@ -46,10 +46,12 @@ class NetworkInterface:
             'dropped_out': stats.dropout,
         }
 
-    def get_info(self):
+    @property
+    def info(self):
         return self.info
 
-    def get_stats(self):
+    @property
+    def stats(self):
         return self.stats
 
     def to_dict(self):
@@ -60,7 +62,8 @@ class NetworkInterface:
         }
 
 
-class NetworkInterfaces:
+
+class NetworkInterfacesService:
     @staticmethod
     def get_interfaces() -> list[NetworkInterface]:
         return [NetworkInterface(name) for name in psutil.net_if_addrs().keys()]
