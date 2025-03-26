@@ -32,9 +32,8 @@ class SnifferService:
         if not sniffer:
             raise SniffNotFoundError(f"Sniffer {sniff_id} not found")
 
-        if sniffer:
-            sniffer.stop()
-            del sniffers[sniff_id]
+        sniffer.stop()
+        del sniffers[sniff_id]
 
         result = await self.redis.stop_sniff(sniff_id)
         return result
