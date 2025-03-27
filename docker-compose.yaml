@@ -2,13 +2,23 @@ version: "3"
 
 services:
 
+  #  sniffer:
+  #    build: .
+  #    network_mode: host
+  #    depends_on:
+  #      - redis
+  #    environment:
+  #      - REDIS_HOST=localhost
+  #      - REDIS_PORT=6379
+  #      - ENABLE_METRICS=true
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus_data:/prometheus
+      - prometheus_data:/prometheus
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
@@ -17,7 +27,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./monitoring/grafana_data:/var/lib/grafana
+      - grafana_data:/var/lib/grafana
 
   redis:
     image: redis:latest
@@ -31,15 +41,19 @@ services:
     ports:
       - "5540:5540"
 
-  sniffer:
-    build: sniffer_svc
-    ports:
-      - "8000:8000"
-    depends_on:
-      - redis
+  rabbitmq:
+    hostname: 'rabbitmq'
+    image: rabbitmq:management
+    container_name: rabbitmq
+    volumes:
+      - ./rabbitmq/rabbit_conf.json:/etc/rabbitmq/definitions.json
+      - ./rabbitmq/data:/var/lib/rabbitmq
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbitmq_management load_definitions \"/etc/rabbitmq/definitions.json\""
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
 
 volumes:
   prometheus_data:
