@@ -6,6 +6,8 @@ from api.repository.redis_repository import RedisConnection
 from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
 
+from api.core.context import rabbitmq_client
+
 load_dotenv()
 
 
@@ -15,6 +17,7 @@ async def lifespan(app: FastAPI):
     await conn.flushdb()
     yield
     await conn.close()
+    await rabbitmq_client.close_connection()
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Sniffer service')

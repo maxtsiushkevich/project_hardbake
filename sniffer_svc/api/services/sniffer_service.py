@@ -2,13 +2,14 @@ from uuid import UUID, uuid4
 
 import asyncio
 
-from api.core.context import sniffers
+from api.core.context import sniffers, rabbitmq_client
 from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError
 from api.schemas.sniffer import SniffStatus, StartSniffDetails
 from api.repository.redis_repository import RedisRepository
 from datetime import datetime
 
-from api.utils.sniffer import sniff_task, rabbit_client
+from api.utils.sniffer import sniff_task
+
 
 
 class SnifferService:
@@ -33,7 +34,7 @@ class SnifferService:
 
         if not sniffer:
             raise SniffNotFoundError(f"Sniffer {sniff_id} not found")
-        await rabbit_client.close_channel(sniff_id)
+        await rabbitmq_client.close_channel(sniff_id)
         sniffer.stop()
         del sniffers[sniff_id]
 
