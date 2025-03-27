@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from uuid import UUID
-from api.exceptions.exceptions import SniffNotFoundError
+from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError
 from api.schemas.sniffer import SniffListResponse, StartSniffDetails, SniffDetails, SniffStatus, SniffFilter
 from api.repository.redis_repository import RedisConnection, RedisRepository
 from api.services.sniffer_service import SnifferService
@@ -15,7 +15,10 @@ async def start_sniff(iface: str, filter_params: SniffFilter | None = None):
         sniffer_service = SnifferService(redis)
 
         bpf_filter = filter_params.to_bpf() if filter_params else None
-        result = await sniffer_service.start(iface, bpf_filter)
+        try:
+            result = await sniffer_service.start(iface, bpf_filter)
+        except SniffAlreadyRunningError:
+            raise HTTPException(status_code=409, detail=f"Sniff on interface {iface} already running")
 
     return StartSniffDetails(**result.dict())
 

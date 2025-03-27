@@ -74,6 +74,15 @@ class RedisRepository:
 
         return active_sniffs
 
+    async def is_sniffer_running(self, iface: str) -> bool:
+        keys = await self.connection.keys("*")
+        for key in keys:
+            data = await self.connection.get(key)
+            if data:
+                if pickle.loads(data).interface == iface:
+                    return True
+        return False
+
     async def get_all(self, start_pos: int | None = None, quantity: int | None = None) -> list[SniffDetails]:
         keys = await self.connection.keys("*")
 
