@@ -11,18 +11,18 @@ from datetime import datetime
 from api.utils.sniffer import sniff_task
 
 
-
 class SnifferService:
 
     def __init__(self, redis: RedisRepository):
         self.redis = redis
 
-    async def start(self, iface: str, filters: str | None = None):
+    async def start(self, iface: str, filters: str | None = None, write_in_file: bool = False):
         sniff_id = uuid4()
         if await self.redis.is_sniffer_running(iface):
             raise SniffAlreadyRunningError
         try:
-            asyncio.create_task(sniff_task(sniff_id=sniff_id, iface=iface, filters=filters, redis=self.redis))
+            asyncio.create_task(sniff_task(sniff_id=sniff_id, iface=iface, filters=filters, redis=self.redis,
+                                           write_in_file=write_in_file))
             details = StartSniffDetails(sniff_id=sniff_id, start_at=datetime.now(), interface=iface)
             await self.redis.save_sniff(details)
             return details

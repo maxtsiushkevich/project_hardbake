@@ -5,18 +5,18 @@ from api.schemas.sniffer import SniffListResponse, StartSniffDetails, SniffDetai
 from api.repository.redis_repository import RedisConnection, RedisRepository
 from api.services.sniffer_service import SnifferService
 
-router = APIRouter(prefix="/sniffer", tags=["Sniffer"])
+router = APIRouter(prefix="/sniffer-rmq", tags=["Sniffer"])
 
 
 @router.post("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
-async def start_sniff(iface: str, filter_params: SniffFilter | None = None):
+async def start_sniff(iface: str, write_in_file: bool=False, filter_params: SniffFilter | None = None):
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         bpf_filter = filter_params.to_bpf() if filter_params else None
         try:
-            result = await sniffer_service.start(iface, bpf_filter)
+            result = await sniffer_service.start(iface, bpf_filter, write_in_file)
         except SniffAlreadyRunningError:
             raise HTTPException(status_code=409, detail=f"Sniff on interface {iface} already running")
 

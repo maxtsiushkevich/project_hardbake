@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from api.routers.sniffer import router as sniffer_router
+from api.routers.sniffer_rmq import router as sniffer_router
 from api.repository.redis_repository import RedisConnection
 from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
