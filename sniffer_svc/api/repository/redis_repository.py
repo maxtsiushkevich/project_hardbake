@@ -78,8 +78,8 @@ class RedisRepository:
         keys = await self.connection.keys("*")
         for key in keys:
             data = await self.connection.get(key)
-            sniff_details = pickle.loads(data)
             if data:
+                sniff_details = pickle.loads(data)
                 if sniff_details.interface == iface and sniff_details.status == SniffStatus.Running:
                     return True
         return False
