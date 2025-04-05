@@ -1,0 +1,201 @@
+{
+  "rabbit_version": "4.0.7",
+  "rabbitmq_version": "4.0.7",
+  "product_name": "RabbitMQ",
+  "product_version": "4.0.7",
+  "rabbitmq_definition_format": "cluster",
+  "users": [
+    {
+      "name": "guest",
+      "password_hash": "7BrcXHQuWK/AjhMY4KeM0kDn2K5hP/WgCo/wt6Om+pO4qP4N",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": [
+        "administrator"
+      ],
+      "limits": {}
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/",
+      "description": "Default virtual host",
+      "metadata": {
+        "description": "Default virtual host",
+        "tags": [],
+        "default_queue_type": "classic"
+      },
+      "tags": [],
+      "default_queue_type": "classic"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "guest",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "threat_detection_svc.notification.notification",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "sniffer_svc.raw_packets.processor",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "threat_detection_svc.notification.dashboard",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "ml_data_processor_svc.ml_data.training",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "packet_processor_svc.processed_packets.dashboard",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "packet_processor_svc.processed_packets.ml_dp",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "ml_data_processor_svc.ml_data.detection",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "sniffer_svc.raw_packets.fanout",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "ml_data_processor_svc.ml_data.fanout",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "packet_processor_svc.processed_packets.fanout",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "threat_detection_svc.notification.fanout",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "ml_data_processor_svc.ml_data.fanout",
+      "vhost": "/",
+      "destination": "ml_data_processor_svc.ml_data.detection",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "ml_data_processor_svc.ml_data.fanout",
+      "vhost": "/",
+      "destination": "ml_data_processor_svc.ml_data.training",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "packet_processor_svc.processed_packets.fanout",
+      "vhost": "/",
+      "destination": "packet_processor_svc.processed_packets.dashboard",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "packet_processor_svc.processed_packets.fanout",
+      "vhost": "/",
+      "destination": "packet_processor_svc.processed_packets.ml_dp",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "sniffer_svc.raw_packets.fanout",
+      "vhost": "/",
+      "destination": "sniffer_svc.raw_packets.processor",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "threat_detection_svc.notification.fanout",
+      "vhost": "/",
+      "destination": "threat_detection_svc.notification.dashboard",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "threat_detection_svc.notification.fanout",
+      "vhost": "/",
+      "destination": "threat_detection_svc.notification.notification",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
+}
