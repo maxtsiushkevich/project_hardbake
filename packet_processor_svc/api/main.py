@@ -16,10 +16,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title='Project Hardbake. Packet processor service')
 
-instrumentator.instrument(app, metric_namespace="system_info_svc").expose(app)
+instrumentator.instrument(app, metric_namespace="packet_processor_svc").expose(app)
 
-app.mount("/metrics", metrics, name="Metrics")
+app.mount("/metrics", metrics)
 app.include_router(packet_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8001)
+    uvicorn.run(app, host='0.0.0.0', port=8002)
