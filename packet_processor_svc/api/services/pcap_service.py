@@ -84,9 +84,15 @@ class PacketPcapService:
     async def process_pcap_file(self):
         reader = AsyncSniffer(session=IPSession, prn=self.process_packet, store=False, offline=self._file_path)
         reader.start()
-        # reader.join()
-        # print(f"Total TCP streams: {len(self.tcp_streams)}")
-        # print(f"Total UDP streams: {len(self.udp_streams)}")
+
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, reader.join)  # Выполнить в фоновом потоке
+
+        await self.on_sniffer_finished()
+
+    async def on_sniffer_finished(self):
+        print(f"Всего TCP-потоков: {len(self.tcp_streams)}")
+        print(f"Всего UDP-потоков: {len(self.udp_streams)}")
 
     def get_stream_summary(self) -> StreamSummary:
         return StreamSummary(
