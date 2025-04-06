@@ -1,9 +1,7 @@
 import os
 import pickle
-
 import redis.asyncio as redis
 from uuid import UUID
-
 from api.schemas.sniffer import SniffDetails, StartSniffDetails, SniffStatus
 from datetime import datetime
 

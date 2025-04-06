@@ -1,10 +1,8 @@
 import os
-
 import pika
 from scapy.layers.msrpce.raw.ms_drsr import UUID
 from scapy.sendrecv import AsyncSniffer
 from scapy.utils import PcapNgWriter
-
 from api.core.context import sniffers, rabbitmq_client
 from api.repository.redis_repository import RedisRepository
 from api.schemas.sniffer import SniffStatus

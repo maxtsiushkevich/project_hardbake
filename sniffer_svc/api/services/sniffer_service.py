@@ -1,13 +1,10 @@
 from uuid import UUID, uuid4
-
 import asyncio
-
 from api.core.context import sniffers, rabbitmq_client
 from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError
 from api.schemas.sniffer import SniffStatus, StartSniffDetails
 from api.repository.redis_repository import RedisRepository
 from datetime import datetime
-
 from api.utils.sniffer import sniff_task
 
 

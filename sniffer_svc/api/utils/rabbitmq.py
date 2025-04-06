@@ -1,10 +1,9 @@
 import os
 import asyncio
 import threading
-
 from dotenv import load_dotenv
 import pika
-from scapy.layers.msrpce.raw.ms_drsr import UUID
+from uuid import UUID
 from pika.adapters.asyncio_connection import AsyncioConnection
 
 

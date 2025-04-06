@@ -9,7 +9,7 @@ router = APIRouter(prefix="/sniffer-rmq", tags=["Sniffer"])
 
 
 @router.post("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
-async def start_sniff(iface: str, write_in_file: bool=False, filter_params: SniffFilter | None = None):
+async def start_sniff(iface: str, write_in_file: bool = False, filter_params: SniffFilter | None = None):
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
