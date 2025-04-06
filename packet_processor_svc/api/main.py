@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-
 import uvicorn
 from fastapi import FastAPI
 from api.monitoring.prometheus import metrics, instrumentator
@@ -8,11 +7,13 @@ from api.routers.packet_processor import router as packet_router
 
 load_dotenv()
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
     yield
-    #shutdown
+    # shutdown
+
 
 app = FastAPI(title='Project Hardbake. Packet processor service')
 
