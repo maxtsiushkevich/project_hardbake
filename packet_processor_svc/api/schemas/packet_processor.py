@@ -9,8 +9,20 @@ from scapy.all import Packet
 
 class FileProcessStatus(str, Enum):
     Running = "Started"
-    Stopped = "Processed"
+    Processed = "Processed"
     Crashed = "Crashed"
+
+
+class TCPFlags(int, Enum):
+    FIN = 0x01
+    SYN = 0x02
+    RST = 0x04
+    ACK = 0x10
+
+
+class UploadStatus(BaseModel):
+    status: FileProcessStatus
+    upload_id: UUID
 
 
 @dataclass
@@ -19,13 +31,8 @@ class StreamSummary:
     udp_streams: Dict[str, List[Packet]]
 
 
-class UploadResult(BaseModel):
-    status: FileProcessStatus
-    upload_id: UUID
-
-
-class TCPFlags(int, Enum):
-    FIN = 0x01
-    SYN = 0x02
-    RST = 0x04
-    ACK = 0x10
+@dataclass
+class PcapProcessResult:
+    info: UploadStatus
+    tcp_streams: Dict[str, List[Packet]]
+    udp_streams: Dict[str, List[Packet]]
