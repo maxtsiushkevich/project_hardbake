@@ -1,8 +1,11 @@
 from contextlib import asynccontextmanager
-import uvicorn
+
 from fastapi import FastAPI
-from api.monitoring.prometheus import metrics, instrumentator
+import uvicorn
 from dotenv import load_dotenv
+
+from api.monitoring.prometheus import metrics, instrumentator
+from api.repository.redis_repository import RedisConnection
 from api.routers.packet_processor import router as packet_router
 
 load_dotenv()
@@ -11,11 +14,13 @@ load_dotenv()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
+    conn = RedisConnection().connection
+    await conn.flushdb()
     yield
     # shutdown
 
 
-app = FastAPI(title='Project Hardbake. Packet processor service')
+app = FastAPI(lifespan=lifespan, title='Project Hardbake. Packet processor service')
 
 instrumentator.instrument(app, metric_namespace="packet_processor_svc").expose(app)
 
