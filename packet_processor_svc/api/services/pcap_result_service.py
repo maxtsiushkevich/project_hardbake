@@ -1,11 +1,14 @@
+import pickle
 from uuid import UUID
+
+from fastapi import HTTPException
 
 from api.exceptions.exceptions import UploadNotFoundError
 from api.repository.redis_repository import PcapRedisRepository
-from api.schemas.packet_processor import UploadStatus
+from api.schemas.pcap_processor import UploadStatus
 
 
-class PcapStatusService:
+class PcapResultService:
     def __init__(self, redis: PcapRedisRepository):
         self.redis = redis
 

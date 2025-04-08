@@ -2,12 +2,14 @@ from collections import defaultdict
 from scapy.all import Packet
 from scapy.layers.inet import UDP, TCP
 from api.services.stream_key_extractor import StreamKeyExtractor
+from api.services.tcp_session_tracker import TCPSessionTracker
 
 
 class PacketProcessor:
     def __init__(self):
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
+        self.tcp_session_tracker = TCPSessionTracker()
 
     def process_packet(self, packet: Packet):
         key, alt_key = StreamKeyExtractor(packet).stream_key
@@ -18,9 +20,13 @@ class PacketProcessor:
             if key in self.tcp_streams:
                 self.tcp_streams[key].append(packet)
             elif alt_key in self.tcp_streams:
+                key = alt_key
                 self.tcp_streams[alt_key].append(packet)
             else:
                 self.tcp_streams[key].append(packet)
+
+            flags = packet[TCP].flags
+            self.tcp_session_tracker.update_tcp_state(key, flags)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:

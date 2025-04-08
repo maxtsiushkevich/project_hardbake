@@ -24,4 +24,5 @@ class StreamKeyExtractor:
         else:
             return None, None
 
-        return f"{src_ip}-{dst_ip}-{src_port}-{dst_port}-{proto}", f"{dst_ip}-{src_ip}-{dst_port}-{src_port}-{proto}"
+        key, alt_key = f"{src_ip}-{dst_ip}-{src_port}-{dst_port}-{proto}", f"{dst_ip}-{src_ip}-{dst_port}-{src_port}-{proto}"
+        return key, alt_key
