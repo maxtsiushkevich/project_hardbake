@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.repository.redis_repository import RedisConnection
-from api.routers.packet_processor import router as packet_router
+from api.routers.management_router import router as management_router
+from api.routers.pcap_processor import router as packet_router
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ instrumentator.instrument(app, metric_namespace="packet_processor_svc").expose(a
 
 app.mount("/metrics", metrics)
 app.include_router(packet_router)
+app.include_router(management_router)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8002)
