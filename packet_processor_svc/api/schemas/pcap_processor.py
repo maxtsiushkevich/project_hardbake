@@ -4,6 +4,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from typing import Dict, List
 from scapy.all import Packet
+from scapy.compat import raw
 
 
 class FileProcessStatus(str, Enum):
@@ -24,24 +25,19 @@ class UploadStatus(BaseModel):
     upload_id: UUID
 
 
-# class UploadStats(BaseModel):
-#     tcp_sessions: int
-#     udp_sessions: int
+class StreamSummary(BaseModel):
+    tcp_streams: Dict[str, List[bytes]]
+    udp_streams: Dict[str, List[bytes]]
 
+    @classmethod
+    def from_packets(cls, tcp_streams: Dict[str, List[Packet]], udp_streams: Dict[str, List[Packet]]):
+        return cls(
+            tcp_streams={k: [raw(pkt) for pkt in v] for k, v in tcp_streams.items()},
+            udp_streams={k: [raw(pkt) for pkt in v] for k, v in udp_streams.items()},
+        )
 
-# class StreamSummary(BaseModel):
-#     tcp_streams: Dict[str, List[bytes]]
-#     udp_streams: Dict[str, List[bytes]]
-#
-#     @classmethod
-#     def from_packets(cls, tcp_streams: Dict[str, List[Packet]], udp_streams: Dict[str, List[Packet]]):
-#         return cls(
-#             tcp_streams={k: [bytes(pkt) for pkt in v] for k, v in tcp_streams.items()},
-#             udp_streams={k: [bytes(pkt) for pkt in v] for k, v in udp_streams.items()},
-#         )
-#
-#     def to_packets(self):
-#         return {
-#             "tcp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.tcp_streams.items()},
-#             "udp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.udp_streams.items()},
-#         }
+    def to_packets(self):
+        return {
+            "tcp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.tcp_streams.items()},
+            "udp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.udp_streams.items()},
+        }

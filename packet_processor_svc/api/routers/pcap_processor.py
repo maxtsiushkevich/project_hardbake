@@ -1,10 +1,11 @@
+import json
 from uuid import UUID
 
 from fastapi import APIRouter, status, UploadFile, File, HTTPException
 import tempfile
-from api.exceptions.exceptions import UploadError, UploadNotFoundError
+from api.exceptions.exceptions import UploadError, UploadNotFoundError, NoStreamsError
 from api.repository.redis_repository import RedisConnection, PcapRedisRepository
-from api.schemas.pcap_processor import UploadStatus
+from api.schemas.pcap_processor import UploadStatus, StreamSummary
 from api.services.pcap_processor_service import PcapProcessorService
 from api.services.pcap_result_service import PcapResultService
 
@@ -38,3 +39,20 @@ async def get_status(upload_id: UUID):
         except UploadNotFoundError:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return result
+
+
+def bytes_encoder(obj):
+    if isinstance(obj, bytes):
+        return obj.hex()
+    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+
+
+@router.get("/{upload_id}/streams")
+async def get_streams(upload_id: UUID):
+    async with RedisConnection() as connection:
+        redis = PcapRedisRepository(connection.redis)
+        streams = await redis.get_streams(upload_id)
+        if not streams:
+            return {"error": "Streams not found"}
+        streams_dict = streams.dict()
+    return json.loads(json.dumps(streams_dict, default=bytes_encoder))

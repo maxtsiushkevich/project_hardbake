@@ -6,7 +6,7 @@ from scapy.sessions import IPSession
 
 from api.exceptions.exceptions import UploadError
 from api.repository.redis_repository import PcapRedisRepository
-from api.schemas.pcap_processor import UploadStatus, FileProcessStatus
+from api.schemas.pcap_processor import UploadStatus, FileProcessStatus, StreamSummary
 from api.services.packet_processor import PacketProcessor
 
 
@@ -22,7 +22,7 @@ class PcapProcessorService:
             status = UploadStatus(status=FileProcessStatus.Running, upload_id=upload_id)
 
             await self.redis.update_status(status, upload_id)
-            # await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
+            await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
 
         except Exception:
             raise UploadError
@@ -42,7 +42,7 @@ class PcapProcessorService:
         except Exception:
             status = UploadStatus(status=FileProcessStatus.Crashed, upload_id=upload_id)
             await self.redis.update_status(status, upload_id)
-            # await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
+            await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
             raise UploadError
 
         loop = asyncio.get_running_loop()
@@ -52,10 +52,10 @@ class PcapProcessorService:
 
     async def _on_pcap_file_finished(self, upload_id: UUID):
         status = UploadStatus(status=FileProcessStatus.Processed, upload_id=upload_id)
-        # streams = StreamSummary.from_packets(
-        #     tcp_streams=self.packet_processor.tcp_streams,
-        #     udp_streams=self.packet_processor.udp_streams
-        # )
+        streams = StreamSummary.from_packets(
+            tcp_streams=self.packet_processor.tcp_streams,
+            udp_streams=self.packet_processor.udp_streams
+        )
 
         await self.redis.update_status(status, upload_id)
-        # await self.redis.update_streams(streams, upload_id)
+        await self.redis.update_streams(streams, upload_id)

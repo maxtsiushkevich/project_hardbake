@@ -3,7 +3,7 @@ import pickle
 import redis.asyncio as redis
 from uuid import UUID
 
-from api.schemas.pcap_processor import UploadStatus
+from api.schemas.pcap_processor import UploadStatus, StreamSummary, FileProcessStatus
 
 
 class RedisConnection:
@@ -31,14 +31,28 @@ class PcapRedisRepository:
         key_status = f"{upload_id}:status"
         await self.connection.set(key_status, pickle.dumps(status))
 
-    # async def update_streams(self, streams: StreamSummary, upload_id: UUID):
-    #     key_streams = f"{upload_id}:streams"
-    #     await self.connection.set(key_streams, pickle.dumps(streams))
-
     async def get_upload_status(self, upload_id: UUID):
         key_status = f"{upload_id}:status"
         data = await self.connection.get(key_status)
         return pickle.loads(data) if data else None
 
+    async def check_processed_status(self, upload_id: UUID) -> bool:
+        status = await self.get_upload_status(upload_id)
+        return status is not None and status.status == FileProcessStatus.Processed
 
+    async def update_streams(self, streams: StreamSummary, upload_id: UUID):
+        key_streams = f"{upload_id}:streams"
+        serialized = pickle.dumps(streams.dict())
+        await self.connection.set(key_streams.encode('utf-8'), serialized)
 
+    async def get_streams(self, upload_id: UUID) -> StreamSummary | None:
+        key_streams = f"{upload_id}:streams"
+        data = await self.connection.get(key_streams.encode('utf-8'))
+        if not data:
+            return None
+        try:
+            streams_dict = pickle.loads(data)
+            return StreamSummary(**streams_dict)
+        except (pickle.PickleError, TypeError) as e:
+            print(f"Error deserializing streams: {e}")
+            return None
