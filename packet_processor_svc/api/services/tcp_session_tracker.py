@@ -1,8 +1,8 @@
 from collections import defaultdict
-from api.schemas.packet_processor import TCPFlags
+from api.schemas.pcap_processor import TCPFlags
 
 
-class TCPStateTracker:
+class TCPSessionTracker:
     def __init__(self):
         self.tcp_stream_states = defaultdict(dict)
 
@@ -16,7 +16,6 @@ class TCPStateTracker:
             }
 
         state = self.tcp_stream_states[key]
-
         if flags & TCPFlags.SYN and not flags & TCPFlags.ACK:
             state['seen_syn'] = True
             state['closed'] = False
