@@ -54,5 +54,5 @@ async def get_streams(upload_id: UUID):
         streams = await redis.get_streams(upload_id)
         if not streams:
             return {"error": "Streams not found"}
-        streams_dict = streams.dict()
+        streams_dict = streams.model_dump()
     return json.loads(json.dumps(streams_dict, default=bytes_encoder))

@@ -42,7 +42,7 @@ class PcapRedisRepository:
 
     async def update_streams(self, streams: StreamSummary, upload_id: UUID):
         key_streams = f"{upload_id}:streams"
-        serialized = pickle.dumps(streams.dict())
+        serialized = pickle.dumps(streams.model_dump())
         await self.connection.set(key_streams.encode('utf-8'), serialized)
 
     async def get_streams(self, upload_id: UUID) -> StreamSummary | None:
