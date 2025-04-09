@@ -1,3 +1,4 @@
+import base64
 from enum import Enum
 from uuid import UUID
 
@@ -26,18 +27,18 @@ class UploadStatus(BaseModel):
 
 
 class StreamSummary(BaseModel):
-    tcp_streams: Dict[str, List[bytes]]
-    udp_streams: Dict[str, List[bytes]]
+    tcp_streams: Dict[str, List[str]]
+    udp_streams: Dict[str, List[str]]
 
     @classmethod
     def from_packets(cls, tcp_streams: Dict[str, List[Packet]], udp_streams: Dict[str, List[Packet]]):
         return cls(
-            tcp_streams={k: [raw(pkt) for pkt in v] for k, v in tcp_streams.items()},
-            udp_streams={k: [raw(pkt) for pkt in v] for k, v in udp_streams.items()},
+            tcp_streams={k: [base64.b64encode(raw(pkt)).decode('utf-8') for pkt in v] for k, v in tcp_streams.items()},
+            udp_streams={k: [base64.b64encode(raw(pkt)).decode('utf-8') for pkt in v] for k, v in udp_streams.items()},
         )
 
     def to_packets(self):
         return {
-            "tcp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.tcp_streams.items()},
-            "udp_streams": {k: [Packet(pkt) for pkt in v] for k, v in self.udp_streams.items()},
+            "tcp_streams": {k: [Packet(base64.b64decode(pkt)) for pkt in v] for k, v in self.tcp_streams.items()},
+            "udp_streams": {k: [Packet(base64.b64decode(pkt)) for pkt in v] for k, v in self.udp_streams.items()},
         }

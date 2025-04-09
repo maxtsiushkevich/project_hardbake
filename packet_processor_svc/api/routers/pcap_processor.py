@@ -3,9 +3,9 @@ from uuid import UUID
 
 from fastapi import APIRouter, status, UploadFile, File, HTTPException
 import tempfile
-from api.exceptions.exceptions import UploadError, UploadNotFoundError, NoStreamsError
+from api.exceptions.exceptions import UploadError, UploadNotFoundError
 from api.repository.redis_repository import RedisConnection, PcapRedisRepository
-from api.schemas.pcap_processor import UploadStatus, StreamSummary
+from api.schemas.pcap_processor import UploadStatus
 from api.services.pcap_processor_service import PcapProcessorService
 from api.services.pcap_result_service import PcapResultService
 
@@ -54,5 +54,4 @@ async def get_streams(upload_id: UUID):
         streams = await redis.get_streams(upload_id)
         if not streams:
             return {"error": "Streams not found"}
-        streams_dict = streams.model_dump()
-    return json.loads(json.dumps(streams_dict, default=bytes_encoder))
+    return streams

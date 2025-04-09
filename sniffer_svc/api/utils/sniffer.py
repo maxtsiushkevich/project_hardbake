@@ -1,5 +1,8 @@
 import os
+import pickle
+
 import pika
+from scapy.compat import raw
 from scapy.layers.msrpce.raw.ms_drsr import UUID
 from scapy.sendrecv import AsyncSniffer
 from scapy.utils import PcapNgWriter
@@ -12,7 +15,8 @@ def packet_operator(packet, channel, writer=None):
     if writer:
         writer.write(packet)
 
-    raw_packet = bytes(packet)
+    print(packet.summary())
+    raw_packet = pickle.dumps(packet)
     channel.basic_publish(
         exchange='sniffer_svc.raw_packets.fanout',
         routing_key='',
