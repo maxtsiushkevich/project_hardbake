@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
 import uvicorn
 from dotenv import load_dotenv
+from fastapi import FastAPI
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.repository.redis_repository import RedisConnection
@@ -18,6 +18,7 @@ async def lifespan(app: FastAPI):
     conn = RedisConnection().connection
     await conn.flushdb()
     yield
+    # остановка потребителя пакетов
     # shutdown
 
 
