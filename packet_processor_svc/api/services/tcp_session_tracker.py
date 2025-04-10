@@ -25,3 +25,8 @@ class TCPSessionTracker:
                 state['closed'] = True
         elif flags & TCPFlags.RST:
             state['closed'] = True
+
+        if state['closed']:
+            del self.tcp_stream_states[key]
+            return True
+        return False

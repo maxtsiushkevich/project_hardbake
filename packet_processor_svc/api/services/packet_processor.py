@@ -6,7 +6,8 @@ from api.services.tcp_session_tracker import TCPSessionTracker
 
 
 class PacketProcessor:
-    def __init__(self):
+    def __init__(self, proxy_mode: bool = False):
+        self.proxy_mode = proxy_mode
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
         self.tcp_session_tracker = TCPSessionTracker()
@@ -26,7 +27,10 @@ class PacketProcessor:
                 self.tcp_streams[key].append(packet)
 
             flags = packet[TCP].flags
-            self.tcp_session_tracker.update_tcp_state(key, flags)
+            is_end = self.tcp_session_tracker.update_tcp_state(key, flags)
+            if is_end and self.proxy_mode:
+                print(f"Sent to rmq {len(self.tcp_streams[key])} packets")
+                self._send_packet_rmq(packet)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
@@ -35,3 +39,6 @@ class PacketProcessor:
                 self.udp_streams[alt_key].append(packet)
             else:
                 self.udp_streams[key].append(packet)
+
+    def _send_packet_rmq(self, packet):
+        pass
