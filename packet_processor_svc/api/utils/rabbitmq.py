@@ -104,3 +104,17 @@ class RabbitMQClient:
                 print("Connection is already closed")
         else:
             raise ConnectionError("No active connection to close")
+
+    async def create_channel(self):
+        """Create new channel for producer. Requires manual closing"""
+        if not self._connection or self._connection.is_closed:
+            self._connect()
+        await self._connect_event.wait()
+
+        channel = await asyncio.get_running_loop().run_in_executor(None, self._connection.channel)
+
+        if not channel or channel.is_closed:
+            raise ConnectionError("Failed to create channel")
+
+        return channel
+

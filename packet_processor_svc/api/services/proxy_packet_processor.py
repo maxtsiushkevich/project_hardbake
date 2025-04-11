@@ -1,5 +1,6 @@
 import pickle
 import asyncio
+
 from api.services.packet_processor import PacketProcessor
 from api.utils.rabbitmq import RabbitMQClient
 
@@ -8,17 +9,21 @@ class ProxyPacketProcessor:
     def __init__(self):
         self.packet_processor = PacketProcessor(proxy_mode=True)
         self.client = None
-        self.channel = None
+        self.consume_channel = None
+        self.produce_channel = None
         self.consumer_tag = None
 
     async def start_consuming(self, queue_name='sniffer_svc.raw_packets.processor', callback=None):
         try:
             self.client = RabbitMQClient()
-            self.channel = await self.client.get_channel()
+            self.consume_channel = await self.client.get_channel()
+            self.produce_channel = await self.client.create_channel()
+
+            self.packet_processor = PacketProcessor(proxy_mode=True, channel=self.produce_channel)
 
             await asyncio.get_running_loop().run_in_executor(
                 None,
-                self.channel.queue_declare,
+                self.consume_channel.queue_declare,
                 queue_name,
                 True
             )
@@ -31,8 +36,8 @@ class ProxyPacketProcessor:
                 finally:
                     channel.basic_ack(delivery_tag=method.delivery_tag)
 
-            self.channel.basic_qos(prefetch_count=1)
-            self.consumer_tag = self.channel.basic_consume(
+            self.consume_channel.basic_qos(prefetch_count=1)
+            self.consumer_tag = self.consume_channel.basic_consume(
                 queue=queue_name,
                 on_message_callback=on_message,
                 auto_ack=False
@@ -51,8 +56,11 @@ class ProxyPacketProcessor:
             raise
 
     async def _cleanup(self):
-        if self.channel and self.consumer_tag:
-            self.channel.basic_cancel(self.consumer_tag)
+        if self.consume_channel and self.consumer_tag:
+            self.consume_channel.basic_cancel(self.consumer_tag)
+        if self.produce_channel:
+            if not self.produce_channel.is_closed:
+                await asyncio.get_running_loop().run_in_executor(None, self.produce_channel.close)
         if self.client:
             await self.client.close()
 
