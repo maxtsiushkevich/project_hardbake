@@ -2,13 +2,13 @@ import os
 import pickle
 
 import pika
-from scapy.compat import raw
 from scapy.layers.msrpce.raw.ms_drsr import UUID
 from scapy.sendrecv import AsyncSniffer
 from scapy.utils import PcapNgWriter
 
 from api.core.context import sniffers, rabbitmq_client
 from api.repository.redis_repository import RedisRepository
+from api.schemas.packet_data import PacketData
 from api.schemas.sniffer import SniffStatus
 
 
@@ -20,12 +20,16 @@ class SnifferUtil:
         if writer:
             writer.write(packet)
 
+        packet_data = PacketData(packet)
+
         print(packet.summary())
-        raw_packet = pickle.dumps(packet)
+        # data = pickle.dumps(packet)
+        data = pickle.dumps(packet_data)
+
         channel.basic_publish(
             exchange='sniffer_svc.raw_packets.fanout',
             routing_key='',
-            body=raw_packet,
+            body=data,
             properties=pika.BasicProperties(delivery_mode=2)
         )
 

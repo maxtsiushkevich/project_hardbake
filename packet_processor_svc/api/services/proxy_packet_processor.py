@@ -1,6 +1,7 @@
 import pickle
 import asyncio
 
+from api.schemas.packet_data import PacketData
 from api.services.packet_processor import PacketProcessor
 from api.utils.rabbitmq import RabbitMQClient
 
@@ -14,9 +15,9 @@ class ProxyPacketProcessor:
         self.consumer_tag = None
 
     async def start_consuming(
-        self,  udp_timeout: int,
-        queue_name='sniffer_svc.raw_packets.processor',
-        callback=None,
+            self, udp_timeout: int,
+            queue_name='sniffer_svc.raw_packets.processor',
+            callback=None,
     ):
         try:
             self.client = RabbitMQClient()
@@ -74,10 +75,9 @@ class ProxyPacketProcessor:
         if self.client:
             await self.client.close()
 
-    async def packet_processing_callback(self, raw_packet):
+    async def packet_processing_callback(self, data):
         try:
-            packet = pickle.loads(raw_packet)
-            self.packet_processor.process_packet(packet)
-            # print(f"{packet[IP].src} -> {packet[IP].dst}")
+            packet_data: PacketData = pickle.loads(data)
+            self.packet_processor.process_packet(packet_data)
         except Exception as e:
             print(f"Error in packet processing: {e}")

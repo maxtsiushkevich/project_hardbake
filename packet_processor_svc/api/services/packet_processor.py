@@ -4,6 +4,8 @@ from collections import defaultdict
 import pika
 from scapy.all import Packet
 from scapy.layers.inet import UDP, TCP
+
+from api.schemas.packet_data import PacketData
 from api.services.stream_key_extractor import StreamKeyExtractor
 from api.services.tcp_session_tracker import TCPSessionTracker
 from api.services.udp_session_tracker import UDPSessionTracker
@@ -20,19 +22,22 @@ class PacketProcessor:
         self.tcp_session_tracker = TCPSessionTracker()
         self.udp_session_tracker = UDPSessionTracker(timeout=udp_timeout)
 
-    def process_packet(self, packet: Packet):
+    def process_packet(self, packet_data: PacketData):
+        print(packet_data)
+        packet: Packet = packet_data.packet
+
         key, alt_key = StreamKeyExtractor(packet).stream_key
         if not key or not alt_key:
             return None
 
         if packet.haslayer(TCP):
             if key in self.tcp_streams:
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
             elif alt_key in self.tcp_streams:
                 key = alt_key
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
             else:
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
 
             flags = packet[TCP].flags
             is_end = self.tcp_session_tracker.update_tcp_state(key, flags)
@@ -45,12 +50,12 @@ class PacketProcessor:
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)
             elif alt_key in self.udp_streams:
                 key = alt_key
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)
             else:
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)
 
             self.udp_session_tracker.update_udp_state(key)
             expired_sessions = self.udp_session_tracker.check_expired_sessions()
