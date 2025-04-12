@@ -6,10 +6,11 @@ from scapy.all import Packet
 from scapy.layers.inet import UDP, TCP, IP
 from api.services.stream_key_extractor import StreamKeyExtractor
 from api.services.tcp_session_tracker import TCPSessionTracker
+from api.services.udp_session_tracker import UDPSessionTracker
 
 
 class PacketProcessor:
-    def __init__(self, proxy_mode: bool = False, channel=None):
+    def __init__(self, udp_timeout, proxy_mode: bool = False, channel=None):
         self.proxy_mode = proxy_mode
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
@@ -17,6 +18,7 @@ class PacketProcessor:
         self.channel = channel
 
         self.tcp_session_tracker = TCPSessionTracker()
+        self.udp_session_tracker = UDPSessionTracker(timeout=udp_timeout)
 
     def process_packet(self, packet: Packet):
         key, alt_key = StreamKeyExtractor(packet).stream_key
@@ -35,8 +37,8 @@ class PacketProcessor:
             flags = packet[TCP].flags
             is_end = self.tcp_session_tracker.update_tcp_state(key, flags)
             if is_end and self.proxy_mode:
-                print(f"Sent to rmq {len(self.tcp_streams[key])} packets")
-                print(type(self.tcp_streams[key]))
+                print(f"Sent to rmq {len(self.tcp_streams[key])} packets TCP")
+                # print(type(self.tcp_streams[key]))
                 self._send_packet_rmq(self.tcp_streams[key])
 
         elif packet.haslayer(UDP):
@@ -47,6 +49,14 @@ class PacketProcessor:
             else:
                 self.udp_streams[key].append(packet)
 
+            self.udp_session_tracker.update_udp_state(key)
+            expired_sessions =  self.udp_session_tracker.check_expired_sessions()
+            for key in expired_sessions:
+                print(f"Sent to rmq {len(self.udp_streams[key])} packets UDP")
+                self._send_packet_rmq(self.udp_streams[key])
+
+            # if is_end and self.proxy_mode:
+            #     self._send_packet_rmq(self.tcp_streams[key])
             # real time udp stream boundary allocation
 
     def _send_packet_rmq(self, stream):

@@ -7,25 +7,31 @@ from api.utils.rabbitmq import RabbitMQClient
 
 class ProxyPacketProcessor:
     def __init__(self):
-        self.packet_processor = PacketProcessor(proxy_mode=True)
+        self.packet_processor = None
         self.client = None
         self.consume_channel = None
         self.produce_channel = None
         self.consumer_tag = None
 
-    async def start_consuming(self, queue_name='sniffer_svc.raw_packets.processor', callback=None):
+    async def start_consuming(
+        self,  udp_timeout: int,
+        queue_name='sniffer_svc.raw_packets.processor',
+        callback=None,
+    ):
         try:
             self.client = RabbitMQClient()
             self.consume_channel = await self.client.get_channel()
             self.produce_channel = await self.client.create_channel()
 
-            self.packet_processor = PacketProcessor(proxy_mode=True, channel=self.produce_channel)
+            self.packet_processor = PacketProcessor(
+                proxy_mode=True,
+                channel=self.produce_channel,
+                udp_timeout=udp_timeout
+            )
 
             await asyncio.get_running_loop().run_in_executor(
                 None,
-                self.consume_channel.queue_declare,
-                queue_name,
-                True
+                lambda: self.consume_channel.queue_declare(queue=queue_name, durable=True)
             )
 
             def on_message(channel, method, properties, body):
@@ -58,9 +64,13 @@ class ProxyPacketProcessor:
     async def _cleanup(self):
         if self.consume_channel and self.consumer_tag:
             self.consume_channel.basic_cancel(self.consumer_tag)
-        if self.produce_channel:
-            if not self.produce_channel.is_closed:
-                await asyncio.get_running_loop().run_in_executor(None, self.produce_channel.close)
+
+        # Закрытие каналов
+        if self.produce_channel and not self.produce_channel.is_closed:
+            await asyncio.get_running_loop().run_in_executor(
+                None, self.produce_channel.close
+            )
+
         if self.client:
             await self.client.close()
 
@@ -69,6 +79,5 @@ class ProxyPacketProcessor:
             packet = pickle.loads(raw_packet)
             self.packet_processor.process_packet(packet)
             # print(f"{packet[IP].src} -> {packet[IP].dst}")
-
         except Exception as e:
             print(f"Error in packet processing: {e}")

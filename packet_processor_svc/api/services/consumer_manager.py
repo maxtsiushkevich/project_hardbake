@@ -12,7 +12,7 @@ class ConsumerManager:
         self.consumer_task: Optional[asyncio.Task] = None
         self.status = ConsumerStatusEnum.NOT_RUNNING
 
-    async def start(self):
+    async def start(self, udp_timeout: int):
         if self.consumer_task and not self.consumer_task.done():
             self.status = ConsumerStatusEnum.RUNNING
             return {"status": self.status}
@@ -20,7 +20,8 @@ class ConsumerManager:
         try:
             self.consumer_task = asyncio.create_task(
                 self.proxy_packet_processor.start_consuming(
-                    callback=self.proxy_packet_processor.packet_processing_callback
+                    callback=self.proxy_packet_processor.packet_processing_callback,
+                    udp_timeout=udp_timeout
                 )
             )
             self.status = ConsumerStatusEnum.RUNNING

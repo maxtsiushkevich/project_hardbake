@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from starlette import status
 
 from api.schemas.management import StartStopResponse, ConsumerStatusResponse
-from api.services.management_service import ConsumerManager
+from api.services.consumer_manager import ConsumerManager
 from api.services.proxy_packet_processor import ProxyPacketProcessor
 
 router = APIRouter(prefix="/management", tags=["Management"])
@@ -12,9 +12,9 @@ consumer_manager = ConsumerManager(proxy_packet_processor)
 
 
 @router.post("/start", response_model=StartStopResponse)
-async def start_consumer_endpoint():
+async def start_consumer_endpoint(udp_timeout: int = 10):
     try:
-        response = await consumer_manager.start()
+        response = await consumer_manager.start(udp_timeout=udp_timeout)
         return StartStopResponse(status=response["status"])
     except Exception as e:
         raise HTTPException(
