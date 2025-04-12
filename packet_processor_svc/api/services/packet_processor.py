@@ -3,7 +3,7 @@ from collections import defaultdict
 
 import pika
 from scapy.all import Packet
-from scapy.layers.inet import UDP, TCP, IP
+from scapy.layers.inet import UDP, TCP
 from api.services.stream_key_extractor import StreamKeyExtractor
 from api.services.tcp_session_tracker import TCPSessionTracker
 from api.services.udp_session_tracker import UDPSessionTracker
@@ -30,40 +30,45 @@ class PacketProcessor:
                 self.tcp_streams[key].append(packet)
             elif alt_key in self.tcp_streams:
                 key = alt_key
-                self.tcp_streams[alt_key].append(packet)
+                self.tcp_streams[key].append(packet)
             else:
                 self.tcp_streams[key].append(packet)
 
             flags = packet[TCP].flags
             is_end = self.tcp_session_tracker.update_tcp_state(key, flags)
+
             if is_end and self.proxy_mode:
-                print(f"Sent to rmq {len(self.tcp_streams[key])} packets TCP")
-                # print(type(self.tcp_streams[key]))
-                self._send_packet_rmq(self.tcp_streams[key])
+                stream = self.tcp_streams.pop(key, [])
+                if stream:
+                    # print(f"{key} TCP")
+                    self._send_packet_rmq(stream)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
                 self.udp_streams[key].append(packet)
             elif alt_key in self.udp_streams:
-                self.udp_streams[alt_key].append(packet)
+                key = alt_key
+                self.udp_streams[key].append(packet)
             else:
                 self.udp_streams[key].append(packet)
 
             self.udp_session_tracker.update_udp_state(key)
-            expired_sessions =  self.udp_session_tracker.check_expired_sessions()
-            for key in expired_sessions:
-                print(f"Sent to rmq {len(self.udp_streams[key])} packets UDP")
-                self._send_packet_rmq(self.udp_streams[key])
+            expired_sessions = self.udp_session_tracker.check_expired_sessions()
 
-            # if is_end and self.proxy_mode:
-            #     self._send_packet_rmq(self.tcp_streams[key])
-            # real time udp stream boundary allocation
+            for expired_key in expired_sessions:
+                stream = self.udp_streams.pop(expired_key, [])
+                if stream:
+                    # print(f"{expired_key} UDP")
+                    self._send_packet_rmq(stream)
 
     def _send_packet_rmq(self, stream):
-        stream_rmq = pickle.dumps(stream)
-        self.channel.basic_publish(
-            exchange='packet_processor_svc.processed_packets.fanout',
-            routing_key='',
-            body=stream_rmq,
-            properties=pika.BasicProperties(delivery_mode=2)
-        )
+        try:
+            stream_rmq = pickle.dumps(stream)
+            self.channel.basic_publish(
+                exchange='packet_processor_svc.processed_packets.fanout',
+                routing_key='',
+                body=stream_rmq,
+                properties=pika.BasicProperties(delivery_mode=2)
+            )
+        except Exception as e:
+            print(f"Error while sending message: {e}")
