@@ -21,7 +21,7 @@ class SnifferService:
             raise SniffAlreadyRunningError
         try:
             asyncio.create_task(self.sniffer_util.start_sniffing(sniff_id=sniff_id, iface=iface, filters=filters,
-                                           write_in_file=write_in_file))
+                                                                 write_in_file=write_in_file))
             details = StartSniffDetails(sniff_id=sniff_id, start_at=datetime.now(), interface=iface)
             await self.redis.save_sniff(details)
             return details
