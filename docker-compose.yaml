@@ -19,16 +19,11 @@ services:
 
   system-info-svc:
     build: ./system_info_svc
-    ports:
-      - "8001:8001"
+    network_mode: host
     depends_on:
       - rabbitmq
     environment:
       - ENABLE_METRICS=true
-      - RABBITMQ_HOST=localhost
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
 
   packet-processor-svc:
     build: ./packet_processor_svc
@@ -41,7 +36,7 @@ services:
       - REDIS_HOST=redis-packet-processor-svc
       - REDIS_PORT=6379
       - ENABLE_METRICS=true
-      - RABBITMQ_HOST=localhost
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
@@ -54,7 +49,7 @@ services:
       - rabbitmq
     environment:
       - ENABLE_METRICS=true
-      - RABBITMQ_HOST=localhost
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
@@ -95,7 +90,6 @@ services:
       - "5540:5540"
 
   rabbitmq:
-    hostname: 'rabbitmq'
     image: rabbitmq:management
     container_name: rabbitmq
     volumes:
