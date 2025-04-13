@@ -40,12 +40,6 @@ async def get_status(upload_id: UUID):
     return result
 
 
-def bytes_encoder(obj):
-    if isinstance(obj, bytes):
-        return obj.hex()
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
-
-
 @router.get("/{upload_id}/streams")
 async def get_streams(upload_id: UUID):
     async with RedisConnection() as connection:

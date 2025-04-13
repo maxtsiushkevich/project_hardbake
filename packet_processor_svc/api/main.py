@@ -18,7 +18,6 @@ async def lifespan(app: FastAPI):
     conn = RedisConnection().connection
     await conn.flushdb()
     yield
-    # остановка потребителя пакетов
     # shutdown
 
 

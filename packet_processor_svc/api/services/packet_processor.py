@@ -23,7 +23,6 @@ class PacketProcessor:
         self.udp_session_tracker = UDPSessionTracker(timeout=udp_timeout)
 
     def process_packet(self, packet_data: PacketData):
-        print(packet_data)
         packet: Packet = packet_data.packet
 
         key, alt_key = StreamKeyExtractor(packet).stream_key
@@ -46,7 +45,7 @@ class PacketProcessor:
                 stream = self.tcp_streams.pop(key, [])
                 if stream:
                     # print(f"{key} TCP")
-                    self._send_packet_rmq(stream)
+                    self._send_stream_rmq(stream)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
@@ -64,9 +63,9 @@ class PacketProcessor:
                 stream = self.udp_streams.pop(expired_key, [])
                 if stream:
                     # print(f"{expired_key} UDP")
-                    self._send_packet_rmq(stream)
+                    self._send_stream_rmq(stream)
 
-    def _send_packet_rmq(self, stream):
+    def _send_stream_rmq(self, stream):
         try:
             stream_rmq = pickle.dumps(stream)
             self.channel.basic_publish(
