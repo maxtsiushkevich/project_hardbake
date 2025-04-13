@@ -67,7 +67,9 @@ class PacketProcessor:
 
     def _send_stream_rmq(self, stream):
         try:
-            stream_rmq = pickle.dumps(stream)
+            byte_entries = [pkt_data.to_bytes() for pkt_data in stream]
+            stream_rmq = pickle.dumps(byte_entries)
+
             self.channel.basic_publish(
                 exchange='packet_processor_svc.processed_packets.fanout',
                 routing_key='',

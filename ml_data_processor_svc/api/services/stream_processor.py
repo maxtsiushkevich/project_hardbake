@@ -67,5 +67,5 @@ class StreamProcessor:
 
     async def stream_processing_callback(self, data):
         packet_data = pickle.loads(data)
-        # problem: 10:ff:e0:63:f4:83 > dc:ef:80:41:a3:f8 (IPv4) / Raw instead Ether / IP / TCP 34.237.73.95:https > 192.168.100.229:51681 PA / Raw for example
-        print(packet_data[0].packet.summary())
+        packet_data_list = [PacketData.from_bytes(data) for data in packet_data]
+        print(packet_data_list[0].packet.summary())

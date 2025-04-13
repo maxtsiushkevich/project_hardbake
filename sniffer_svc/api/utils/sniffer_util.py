@@ -23,7 +23,7 @@ class SnifferUtil:
         packet_data = PacketData(packet)
 
         print(packet.summary())
-        # data = pickle.dumps(packet)
+        packet_data = packet_data.to_bytes()
         data = pickle.dumps(packet_data)
 
         channel.basic_publish(

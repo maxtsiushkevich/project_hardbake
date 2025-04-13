@@ -77,7 +77,8 @@ class ProxyPacketProcessor:
 
     async def packet_processing_callback(self, data):
         try:
-            packet_data: PacketData = pickle.loads(data)
+            packet_data = pickle.loads(data)
+            packet_data = PacketData.from_bytes(packet_data)
             print(packet_data.packet.summary())
             self.packet_processor.process_packet(packet_data)
         except Exception as e:
