@@ -2,15 +2,62 @@ version: "3"
 
 services:
 
-  #  sniffer:
-  #    build: .
-  #    network_mode: host
-  #    depends_on:
-  #      - redis
-  #    environment:
-  #      - REDIS_HOST=localhost
-  #      - REDIS_PORT=6379
-  #      - ENABLE_METRICS=true
+  sniffer-svc:
+    build: ./sniffer_svc
+    network_mode: host
+    depends_on:
+      - redis-sniffer-svc
+      - rabbitmq
+    environment:
+      - REDIS_HOST=localhost
+      - REDIS_PORT=6379
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=localhost
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+
+  system-info-svc:
+    build: ./system_info_svc
+    ports:
+      - "8001:8001"
+    depends_on:
+      - rabbitmq
+    environment:
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=localhost
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+
+  packet-processor-svc:
+    build: ./packet_processor_svc
+    ports:
+      - "8002:8002"
+    depends_on:
+      - redis-packet-processor-svc
+      - rabbitmq
+    environment:
+      - REDIS_HOST=redis-packet-processor-svc
+      - REDIS_PORT=6379
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=localhost
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+
+  ml-data-processor-svc:
+    build: ./ml_data_processor_svc
+    ports:
+      - "8003:8003"
+    depends_on:
+      - rabbitmq
+    environment:
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=localhost
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
 
   prometheus:
     image: prom/prometheus
