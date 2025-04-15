@@ -2,6 +2,7 @@ import pickle
 import asyncio
 
 from api.schemas.packet_data import PacketData
+from api.services.ml_parcer import MLParser
 from api.utils.rabbitmq import RabbitMQClient
 
 
@@ -67,5 +68,7 @@ class StreamProcessor:
 
     async def stream_processing_callback(self, data):
         packet_data = pickle.loads(data)
-        packet_data_list = [PacketData.from_bytes(data) for data in packet_data]
-        print(packet_data_list[0].packet.summary())
+        stream = [PacketData.from_bytes(data) for data in packet_data]
+        # print(stream)
+        # print(stream[0].packet.summary())
+        await MLParser.parsing_task(stream)
