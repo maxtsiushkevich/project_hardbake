@@ -1,6 +1,6 @@
 import time
 import struct
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from scapy.compat import raw
 from scapy.layers.l2 import Ether
@@ -10,7 +10,7 @@ from scapy.packet import Packet
 @dataclass
 class PacketData:
     packet: Packet
-    timestamp: int = time.time_ns()
+    timestamp: int = field(default_factory=time.time_ns)
 
     def to_bytes(self) -> bytes:
         """Serialize PacketData to bytes.
