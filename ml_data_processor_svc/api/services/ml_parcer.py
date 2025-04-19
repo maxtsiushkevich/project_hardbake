@@ -36,6 +36,8 @@ class PacketSeparator:
         return forward, backward
 
 
+
+
 class PacketStatistics:
     @staticmethod
     def lengths(packets: List[PacketData]) -> List[int]:
@@ -68,6 +70,42 @@ class PacketStatistics:
             statistics.stdev(values) if len(values) > 1 else 0.0
         )
 
+#
+# class MLParser:
+#     @staticmethod
+#     async def parsing_task(stream: List[PacketData]) -> DataRecord | None:
+#         separator = PacketSeparator(stream)
+#         forward, backward = separator.separate()
+#
+#         fwd_sizes = PacketStatistics.lengths(forward)
+#         bwd_sizes = PacketStatistics.lengths(backward)
+#         all_sizes = fwd_sizes + bwd_sizes
+#
+#         fwd_timestamps = PacketStatistics.timestamps(forward)
+#         bwd_timestamps = PacketStatistics.timestamps(backward)
+#
+#         fwd_stats = PacketStatistics.stats(fwd_sizes)
+#         bwd_stats = PacketStatistics.stats(bwd_sizes)
+#
+#         record = DataRecord(
+#             total_fwd_packet=len(fwd_sizes),
+#             total_bwd_packets=len(bwd_sizes),
+#             total_length_of_fwd_packet=sum(fwd_sizes),
+#             total_length_of_bwd_packet=sum(bwd_sizes),
+#             fwd_packet_length_min=fwd_stats[0],
+#             fwd_packet_length_max=fwd_stats[1],
+#             fwd_packet_length_mean=fwd_stats[2],
+#             fwd_packet_length_std=fwd_stats[3],
+#             bwd_packet_length_min=bwd_stats[0],
+#             bwd_packet_length_max=bwd_stats[1],
+#             bwd_packet_length_mean=bwd_stats[2],
+#             bwd_packet_length_std=bwd_stats[3],
+#             average_packet_size=statistics.mean(all_sizes) if all_sizes else 0.0,
+#             fwd_IAT_max=PacketStatistics.max_iat(fwd_timestamps),
+#             bwd_IAT_max=PacketStatistics.max_iat(bwd_timestamps),
+#         )
+#
+#         return record if forward or backward else None
 
 class MLParser:
     @staticmethod
@@ -75,32 +113,72 @@ class MLParser:
         separator = PacketSeparator(stream)
         forward, backward = separator.separate()
 
+        if not forward and not backward:
+            return None
+
         fwd_sizes = PacketStatistics.lengths(forward)
         bwd_sizes = PacketStatistics.lengths(backward)
         all_sizes = fwd_sizes + bwd_sizes
 
         fwd_timestamps = PacketStatistics.timestamps(forward)
-        bwd_timestamps = PacketStatistics.timestamps(backward)
+        all_timestamps = PacketStatistics.timestamps(stream)
 
-        fwd_stats = PacketStatistics.stats(fwd_sizes)
-        bwd_stats = PacketStatistics.stats(bwd_sizes)
+        # Packet length stats
+        min_packet_length = min(all_sizes) if all_sizes else 0
+        max_packet_length = max(all_sizes) if all_sizes else 0
+        packet_length_std = statistics.stdev(all_sizes) if len(all_sizes) > 1 else 0.0
+        packet_length_variance = statistics.variance(all_sizes) if len(all_sizes) > 1 else 0.0
+
+        # PSH flag count
+        psh_flag_count = sum(1 for p in stream if hasattr(p.packet, 'flags') and 'P' in str(p.packet.flags))
+
+        # Avg Bwd Segment Size
+        avg_bwd_segment_size = statistics.mean(bwd_sizes) if bwd_sizes else 0.0
+
+        # Idle times (inter-arrival time)
+        def idle_times(timestamps: List[int]) -> List[int]:
+            if len(timestamps) < 2:
+                return [0]
+            return [timestamps[i] - timestamps[i - 1] for i in range(1, len(timestamps))]
+
+        iat_all = idle_times(all_timestamps)
+        idle_min = min(iat_all) // 1_000_000 if iat_all else 0
+        idle_mean = statistics.mean(iat_all) / 1_000_000 if iat_all else 0.0
+        idle_max = max(iat_all) // 1_000_000 if iat_all else 0
+
+        # Flow IAT Std and Max
+        flow_IAT_std = statistics.stdev(iat_all) / 1_000_000 if len(iat_all) > 1 else 0.0
+        flow_IAT_max = max(iat_all) // 1_000_000 if iat_all else 0
+
+        # Fwd IAT Std and Max
+        fwd_iat = idle_times(fwd_timestamps)
+        fwd_IAT_std = statistics.stdev(fwd_iat) / 1_000_000 if len(fwd_iat) > 1 else 0.0
+        fwd_IAT_max = max(fwd_iat) // 1_000_000 if fwd_iat else 0
+
+        # Bwd Packet Length Stats
+        bwd_min, bwd_max, bwd_mean, bwd_std = PacketStatistics.stats(bwd_sizes)
 
         record = DataRecord(
-            total_fwd_packet=len(fwd_sizes),
-            total_bwd_packets=len(bwd_sizes),
-            total_length_of_fwd_packet=sum(fwd_sizes),
-            total_length_of_bwd_packet=sum(bwd_sizes),
-            fwd_packet_length_min=fwd_stats[0],
-            fwd_packet_length_max=fwd_stats[1],
-            fwd_packet_length_mean=fwd_stats[2],
-            fwd_packet_length_std=fwd_stats[3],
-            bwd_packet_length_min=bwd_stats[0],
-            bwd_packet_length_max=bwd_stats[1],
-            bwd_packet_length_mean=bwd_stats[2],
-            bwd_packet_length_std=bwd_stats[3],
-            average_packet_size=statistics.mean(all_sizes) if all_sizes else 0.0,
-            fwd_IAT_max=PacketStatistics.max_iat(fwd_timestamps),
-            bwd_IAT_max=PacketStatistics.max_iat(bwd_timestamps),
+            protocol=stream[0].packet[IP].proto if stream and stream[0].packet.haslayer(IP) else 0,
+            bwd_packet_length_max=bwd_max,
+            bwd_packet_length_min=bwd_min,
+            bwd_packet_length_mean=bwd_mean,
+            bwd_packet_length_std=bwd_std,
+            flow_IAT_std=flow_IAT_std,
+            flow_IAT_max=flow_IAT_max,
+            fwd_IAT_std=fwd_IAT_std,
+            fwd_IAT_max=fwd_IAT_max,
+            min_packet_length=min_packet_length,
+            max_packet_length=max_packet_length,
+            packet_length_std=packet_length_std,
+            packet_length_variance=packet_length_variance,
+            psh_flag_count=psh_flag_count,
+            avg_bwd_segment_size=avg_bwd_segment_size,
+            idle_min=idle_min,
+            idle_mean=idle_mean,
+            idle_max=idle_max
         )
 
-        return record if forward or backward else None
+        print(record)
+
+        return record
