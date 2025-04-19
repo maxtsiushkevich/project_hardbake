@@ -26,6 +26,7 @@ class RabbitMQClient:
 
     def __init__(self):
         with self._init_lock:
+            print('init')
             load_dotenv()
 
             user = os.getenv("RABBITMQ_USER")
@@ -48,15 +49,24 @@ class RabbitMQClient:
 
             self._connect()
 
+    async def wait_for_connection_ready(self, timeout=5):
+        start = asyncio.get_event_loop().time()
+        while not self._connection or self._connection.is_closed:
+            if asyncio.get_event_loop().time() - start > timeout:
+                raise TimeoutError("RabbitMQ connection didn't open in time.")
+            await asyncio.sleep(0.1)
+
     def _connect(self):
         try:
             self._connection = AsyncioConnection(self._connection_params)
         except Exception as e:
+            self._connection = None
             raise ConnectionError(f"Failed to establish RabbitMQ connection: {e}")
 
     async def open_channel(self, sniff_id: UUID):
-        if not self._connection or self._connection.is_closed:
-            raise ConnectionError("RabbitMQ connection is closed")
+        if self._connection is None or self._connection.is_closed:
+            self._connect()
+            await self.wait_for_connection_ready()
 
         async with asyncio.Lock():
             try:
