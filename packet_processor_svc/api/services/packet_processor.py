@@ -12,7 +12,7 @@ from api.services.udp_session_tracker import UDPSessionTracker
 
 
 class PacketProcessor:
-    def __init__(self, udp_timeout, proxy_mode: bool = False, channel=None):
+    def __init__(self, udp_timeout=10, proxy_mode: bool = False, channel=None):
         self.proxy_mode = proxy_mode
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
@@ -59,11 +59,11 @@ class PacketProcessor:
             self.udp_session_tracker.update_udp_state(key)
             expired_sessions = self.udp_session_tracker.check_expired_sessions()
 
-            for expired_key in expired_sessions:
-                stream = self.udp_streams.pop(expired_key, [])
-                if stream:
-                    # print(f"{expired_key} UDP")
-                    self._send_stream_rmq(stream)
+            if self.proxy_mode and expired_sessions:
+                for expired_key in expired_sessions:
+                    stream = self.udp_streams.pop(expired_key, [])
+                    if stream:
+                        self._send_stream_rmq(stream)
 
     def _send_stream_rmq(self, stream):
         try:
@@ -78,3 +78,4 @@ class PacketProcessor:
             )
         except Exception as e:
             print(f"Error while sending message: {e}")
+            raise e

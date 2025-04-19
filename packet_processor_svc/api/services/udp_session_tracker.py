@@ -3,7 +3,7 @@ from collections import defaultdict
 
 
 class UDPSessionTracker:
-    def __init__(self, timeout: int):
+    def __init__(self, timeout: int = 10):
         """
         :param timeout: session timeout in seconds
         """
