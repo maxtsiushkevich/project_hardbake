@@ -1,6 +1,8 @@
 import pickle
 import asyncio
 
+import pika
+
 from api.schemas.packet_data import PacketData
 from api.services.ml_parcer import MLParser
 from api.utils.rabbitmq import RabbitMQClient
@@ -10,7 +12,7 @@ class StreamProcessor:
     def __init__(self):
         self.client = None
         self.consume_channel = None
-        # self.produce_channel = None
+        self.produce_channel = None
         self.consumer_tag = None
 
     async def start_consuming(
@@ -20,7 +22,7 @@ class StreamProcessor:
         try:
             self.client = RabbitMQClient()
             self.consume_channel = await self.client.get_channel()
-            # self.produce_channel = await self.client.create_channel()
+            self.produce_channel = await self.client.create_channel()
 
             await asyncio.get_running_loop().run_in_executor(
                 None,
@@ -58,10 +60,10 @@ class StreamProcessor:
         if self.consume_channel and self.consumer_tag:
             self.consume_channel.basic_cancel(self.consumer_tag)
 
-        # if self.produce_channel and not self.produce_channel.is_closed:
-        #     await asyncio.get_running_loop().run_in_executor(
-        #         None, self.produce_channel.close
-        #     )
+        if self.produce_channel and not self.produce_channel.is_closed:
+            await asyncio.get_running_loop().run_in_executor(
+                None, self.produce_channel.close
+            )
 
         if self.client:
             await self.client.close()
@@ -69,6 +71,16 @@ class StreamProcessor:
     async def stream_processing_callback(self, data):
         packet_data = pickle.loads(data)
         stream = [PacketData.from_bytes(data) for data in packet_data]
-        # print(stream)
-        # print(stream[0].packet.summary())
-        await MLParser.parsing_task(stream)
+
+        record = await MLParser.parsing_task(stream)
+
+        try:
+            self.produce_channel.basic_publish(
+                exchange='ml_data_processor_svc.ml_data.fanout',
+                routing_key='',
+                body=pickle.dumps(record),
+                properties=pika.BasicProperties(delivery_mode=2)
+            )
+        except Exception as e:
+            print(f"Error while sending message: {e}")
+            raise e

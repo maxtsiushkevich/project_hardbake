@@ -17,7 +17,7 @@ async def lifespan(app: FastAPI):
     # shutdown
 
 
-app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Data Processor service')
+app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Data Processor Service')
 
 instrumentator.instrument(app, metric_namespace="ml_data_processor_svc").expose(app)
 

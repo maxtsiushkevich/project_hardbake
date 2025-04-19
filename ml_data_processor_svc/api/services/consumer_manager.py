@@ -26,9 +26,9 @@ class ConsumerManager:
             self.status = ConsumerStatusEnum.RUNNING
             return {"status": self.status}
         except Exception as e:
-            logging.error(f"Failed to start consumer: {str(e)}")
+            logging.error(f"{str(e)}")
             self.status = ConsumerStatusEnum.NOT_RUNNING
-            raise Exception(f"Failed to start consumer: {str(e)}")
+            raise Exception(f"{str(e)}")
 
     async def stop(self):
         if not self.consumer_task or self.consumer_task.done():

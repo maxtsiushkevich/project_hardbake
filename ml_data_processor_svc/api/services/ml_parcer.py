@@ -103,5 +103,4 @@ class MLParser:
             bwd_IAT_max=PacketStatistics.max_iat(bwd_timestamps),
         )
 
-        print(record)
         return record if forward or backward else None
