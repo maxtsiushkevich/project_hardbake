@@ -70,43 +70,6 @@ class PacketStatistics:
             statistics.stdev(values) if len(values) > 1 else 0.0
         )
 
-#
-# class MLParser:
-#     @staticmethod
-#     async def parsing_task(stream: List[PacketData]) -> DataRecord | None:
-#         separator = PacketSeparator(stream)
-#         forward, backward = separator.separate()
-#
-#         fwd_sizes = PacketStatistics.lengths(forward)
-#         bwd_sizes = PacketStatistics.lengths(backward)
-#         all_sizes = fwd_sizes + bwd_sizes
-#
-#         fwd_timestamps = PacketStatistics.timestamps(forward)
-#         bwd_timestamps = PacketStatistics.timestamps(backward)
-#
-#         fwd_stats = PacketStatistics.stats(fwd_sizes)
-#         bwd_stats = PacketStatistics.stats(bwd_sizes)
-#
-#         record = DataRecord(
-#             total_fwd_packet=len(fwd_sizes),
-#             total_bwd_packets=len(bwd_sizes),
-#             total_length_of_fwd_packet=sum(fwd_sizes),
-#             total_length_of_bwd_packet=sum(bwd_sizes),
-#             fwd_packet_length_min=fwd_stats[0],
-#             fwd_packet_length_max=fwd_stats[1],
-#             fwd_packet_length_mean=fwd_stats[2],
-#             fwd_packet_length_std=fwd_stats[3],
-#             bwd_packet_length_min=bwd_stats[0],
-#             bwd_packet_length_max=bwd_stats[1],
-#             bwd_packet_length_mean=bwd_stats[2],
-#             bwd_packet_length_std=bwd_stats[3],
-#             average_packet_size=statistics.mean(all_sizes) if all_sizes else 0.0,
-#             fwd_IAT_max=PacketStatistics.max_iat(fwd_timestamps),
-#             bwd_IAT_max=PacketStatistics.max_iat(bwd_timestamps),
-#         )
-#
-#         return record if forward or backward else None
-
 class MLParser:
     @staticmethod
     async def parsing_task(stream: List[PacketData]) -> DataRecord | None:
