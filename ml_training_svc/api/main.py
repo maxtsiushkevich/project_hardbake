@@ -6,7 +6,6 @@ from fastapi import FastAPI
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.train_router import router as train_router
-from api.utils.rabbitmq import RabbitMQClient
 
 load_dotenv()
 
@@ -15,7 +14,7 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # startup
     yield
-    #shutdown
+    # shutdown
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Training Service')

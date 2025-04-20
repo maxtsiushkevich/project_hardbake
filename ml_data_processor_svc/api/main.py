@@ -15,7 +15,7 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     # startup
     yield
-    await RabbitMQClient().close_connection()
+    # shutdown
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Data Processor Service')

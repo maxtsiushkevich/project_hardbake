@@ -19,7 +19,7 @@ async def lifespan(app: FastAPI):
     conn = RedisConnection().connection
     await conn.flushdb()
     yield
-    await RabbitMQClient().close_connection()
+    # shutdown
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Packet processor service')
