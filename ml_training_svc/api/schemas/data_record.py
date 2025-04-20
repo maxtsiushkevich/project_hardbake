@@ -23,7 +23,6 @@ from pydantic import BaseModel
 # Idle Max	            		Maximum time a flow was idle before becoming active
 
 
-
 class DataRecord(BaseModel):
     protocol: int
     bwd_packet_length_max: int

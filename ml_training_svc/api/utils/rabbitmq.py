@@ -117,4 +117,3 @@ class RabbitMQClient:
             raise ConnectionError("Failed to create channel")
 
         return channel
-

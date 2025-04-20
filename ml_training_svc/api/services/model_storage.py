@@ -1,15 +1,14 @@
-import asyncio
 import logging
 import sqlite3
-from typing import Optional, List
+from typing import Optional
 import numpy as np
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import RobustScaler
 from sklearn.svm import OneClassSVM
 
+from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady
 from api.schemas.data_record import DataRecord
 from api.schemas.ml import TrainingStatus, ModelHyperparameters
-from exceptions.exceptions import ModelsNotReady, NotEnoughTrainingRecords
 
 
 class ModelStorage:

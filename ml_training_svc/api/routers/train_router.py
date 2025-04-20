@@ -3,11 +3,11 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from starlette import status
 
+from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady
 from api.schemas.ml import ModelHyperparameters, TrainingStatus
 from api.services.ml_data_processor import MLDataProcessor
 from api.services.model_storage import ModelStorage
 from api.utils.rabbitmq import RabbitMQClient
-from exceptions.exceptions import ModelsNotReady, NotEnoughTrainingRecords
 
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
