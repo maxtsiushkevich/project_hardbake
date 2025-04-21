@@ -75,7 +75,7 @@
       }
     },
     {
-      "name": "packet_processor_svc.processed_packets.dashboard",
+      "name": "ml_data_processor_svc.ml_data.dashboard",
       "vhost": "/",
       "durable": true,
       "auto_delete": false,
@@ -133,7 +133,7 @@
     {
       "name": "threat_detection_svc.notification.fanout",
       "vhost": "/",
-      "type": "direct",
+      "type": "fanout",
       "durable": true,
       "auto_delete": false,
       "internal": false,
@@ -152,15 +152,15 @@
     {
       "source": "ml_data_processor_svc.ml_data.fanout",
       "vhost": "/",
-      "destination": "ml_data_processor_svc.ml_data.training",
+      "destination": "ml_data_processor_svc.ml_data.dashboard",
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}
     },
     {
-      "source": "packet_processor_svc.processed_packets.fanout",
+      "source": "ml_data_processor_svc.ml_data.fanout",
       "vhost": "/",
-      "destination": "packet_processor_svc.processed_packets.dashboard",
+      "destination": "ml_data_processor_svc.ml_data.training",
       "destination_type": "queue",
       "routing_key": "",
       "arguments": {}
