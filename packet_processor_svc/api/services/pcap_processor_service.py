@@ -3,6 +3,7 @@ from collections import defaultdict
 from uuid import uuid4, UUID
 
 from scapy.layers.inet import TCP, UDP
+from scapy.packet import Packet
 from scapy.sendrecv import AsyncSniffer
 from scapy.sessions import IPSession
 
@@ -69,7 +70,12 @@ class PcapProcessorService:
         await self.redis.update_status(status, upload_id)
         await self.redis.update_streams(streams, upload_id)
 
-    def process_packet(self, packet):
+    def process_packet(self, packet: Packet):
+        """" если можно, нужно вытянуть время получения пакета (реальное) и сохранять в словари tcp_streams и udp_streams объекты типа PacketData
+             но будет проблема с сохранением в Redis
+             нужно будет менять StreamSummary
+        """
+
         key, alt_key = StreamKeyExtractor(packet).stream_key
         if not key or not alt_key:
             return None
