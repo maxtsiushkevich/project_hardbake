@@ -30,8 +30,7 @@ class MLDataProcessor:
 
     def process_message(self, channel, method, properties, body):
         try:
-            print('yes')
-            data_record: DataRecord = pickle.loads(body)
+            data_record = DataRecord.model_validate_json(body)
 
             self.model_storage.add_data(data_record)
 

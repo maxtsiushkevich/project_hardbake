@@ -3,6 +3,7 @@ import asyncio
 
 import pika
 
+from api.schemas.data_record import DataRecord
 from api.schemas.packet_data import PacketData
 from api.services.ml_parcer import MLParser
 from api.utils.rabbitmq import RabbitMQClient
@@ -72,13 +73,14 @@ class StreamProcessor:
         packet_data = pickle.loads(data)
         stream = [PacketData.from_bytes(data) for data in packet_data]
 
-        record = await MLParser.parsing_task(stream)
+        record: DataRecord = await MLParser.parsing_task(stream)
+        json_record = record.model_dump_json()
 
         try:
             self.produce_channel.basic_publish(
                 exchange='ml_data_processor_svc.ml_data.fanout',
                 routing_key='',
-                body=pickle.dumps(record),
+                body=json_record,
                 properties=pika.BasicProperties(delivery_mode=2)
             )
         except Exception as e:
