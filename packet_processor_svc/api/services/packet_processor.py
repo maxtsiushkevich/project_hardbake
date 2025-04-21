@@ -44,8 +44,7 @@ class PacketProcessor:
             if is_end and self.proxy_mode:
                 stream = self.tcp_streams.pop(key, [])
                 if stream:
-                    # print(f"{key} TCP")
-                    self._send_stream_rmq(stream)
+                    self.send_stream_rmq(stream)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
@@ -63,9 +62,9 @@ class PacketProcessor:
                 for expired_key in expired_sessions:
                     stream = self.udp_streams.pop(expired_key, [])
                     if stream:
-                        self._send_stream_rmq(stream)
+                        self.send_stream_rmq(stream)
 
-    def _send_stream_rmq(self, stream):
+    def send_stream_rmq(self, stream):
         try:
             byte_entries = [pkt_data.to_bytes() for pkt_data in stream]
             stream_rmq = pickle.dumps(byte_entries)
