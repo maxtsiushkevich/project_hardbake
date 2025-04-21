@@ -3,7 +3,6 @@ from fastapi import FastAPI
 from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
 from api.routers.interface import router as interface_router
-from api.routers.port import router as port_router
 
 load_dotenv()
 
@@ -14,7 +13,6 @@ instrumentator.instrument(app, metric_namespace="system_info_svc").expose(app)
 app.mount("/metrics", metrics, name="Metrics")
 
 app.include_router(interface_router)
-app.include_router(port_router)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8001)
