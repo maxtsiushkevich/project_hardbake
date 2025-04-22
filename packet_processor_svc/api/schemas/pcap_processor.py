@@ -7,6 +7,8 @@ from typing import Dict, List
 from scapy.all import Packet
 from scapy.compat import raw
 
+from api.schemas.packet_data import PacketData
+
 
 class FileProcessStatus(str, Enum):
     Running = "Started"
@@ -31,14 +33,26 @@ class StreamSummary(BaseModel):
     udp_streams: Dict[str, List[str]]
 
     @classmethod
-    def from_packets(cls, tcp_streams: Dict[str, List[Packet]], udp_streams: Dict[str, List[Packet]]):
+    def from_packets(cls, tcp_streams: Dict[str, List[PacketData]], udp_streams: Dict[str, List[PacketData]]):
         return cls(
-            tcp_streams={k: [base64.b64encode(raw(pkt)).decode('utf-8') for pkt in v] for k, v in tcp_streams.items()},
-            udp_streams={k: [base64.b64encode(raw(pkt)).decode('utf-8') for pkt in v] for k, v in udp_streams.items()},
+            tcp_streams={
+                k: [base64.b64encode(pkt.to_bytes()).decode('utf-8') for pkt in v]
+                for k, v in tcp_streams.items()
+            },
+            udp_streams={
+                k: [base64.b64encode(pkt.to_bytes()).decode('utf-8') for pkt in v]
+                for k, v in udp_streams.items()
+            }
         )
 
     def to_packets(self):
         return {
-            "tcp_streams": {k: [Packet(base64.b64decode(pkt)) for pkt in v] for k, v in self.tcp_streams.items()},
-            "udp_streams": {k: [Packet(base64.b64decode(pkt)) for pkt in v] for k, v in self.udp_streams.items()},
+            "tcp_streams": {
+                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
+                for k, v in self.tcp_streams.items()
+            },
+            "udp_streams": {
+                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
+                for k, v in self.udp_streams.items()
+            }
         }

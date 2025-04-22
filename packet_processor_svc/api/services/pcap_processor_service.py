@@ -6,9 +6,11 @@ from scapy.layers.inet import TCP, UDP
 from scapy.packet import Packet
 from scapy.sendrecv import AsyncSniffer
 from scapy.sessions import IPSession
+from scapy.utils import PcapNgReader
 
 from api.exceptions.exceptions import UploadError
 from api.repository.redis_repository import PcapRedisRepository
+from api.schemas.packet_data import PacketData
 from api.schemas.pcap_processor import UploadStatus, FileProcessStatus, StreamSummary
 from api.services.stream_key_extractor import StreamKeyExtractor
 
@@ -39,21 +41,20 @@ class PcapProcessorService:
 
     async def _process_pcap_file(self, upload_id: UUID):
         try:
-            reader = AsyncSniffer(
-                session=IPSession,
-                prn=self.process_packet,
-                store=False,
-                offline=self._file_path
-            )
-            reader.start()
-        except Exception:
+            loop = asyncio.get_running_loop()
+            with PcapNgReader(self._file_path) as pcap_reader:
+                for packet in pcap_reader:
+                    try:
+                        await loop.run_in_executor(None, self.process_packet, packet)
+                    except Exception as e:
+                        print(f"Error processing packet: {e}")
+                        continue
+
+        except Exception as e:
             status = UploadStatus(status=FileProcessStatus.Crashed, upload_id=upload_id)
             await self.redis.update_status(status, upload_id)
             await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
-            raise UploadError
-
-        loop = asyncio.get_running_loop()
-        await loop.run_in_executor(None, reader.join)
+            raise UploadError(f"Failed to process pcap file: {e}")
 
         await self._on_pcap_file_finished(upload_id)
 
@@ -71,10 +72,9 @@ class PcapProcessorService:
         await self.redis.update_streams(streams, upload_id)
 
     def process_packet(self, packet: Packet):
-        """" если можно, нужно вытянуть время получения пакета (реальное) и сохранять в словари tcp_streams и udp_streams объекты типа PacketData
-             но будет проблема с сохранением в Redis
-             нужно будет менять StreamSummary
-        """
+        timestamp = int(packet.time * 1_000_000_000)
+        print(timestamp)
+        packet_data = PacketData(packet=packet)
 
         key, alt_key = StreamKeyExtractor(packet).stream_key
         if not key or not alt_key:
@@ -82,18 +82,18 @@ class PcapProcessorService:
 
         if packet.haslayer(TCP):
             if key in self.tcp_streams:
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
             elif alt_key in self.tcp_streams:
                 key = alt_key
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
             else:
-                self.tcp_streams[key].append(packet)
+                self.tcp_streams[key].append(packet_data)
 
         elif packet.haslayer(UDP):
             if key in self.udp_streams:
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)
             elif alt_key in self.udp_streams:
                 key = alt_key
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)
             else:
-                self.udp_streams[key].append(packet)
+                self.udp_streams[key].append(packet_data)

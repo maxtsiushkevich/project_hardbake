@@ -7,6 +7,7 @@ from api.exceptions.exceptions import UploadNotFoundError, NoStreamsError
 from api.repository.redis_repository import PcapRedisRepository
 from api.schemas.pcap_processor import UploadStatus, StreamSummary
 from api.services.packet_processor import PacketProcessor
+from api.utils.rabbitmq import RabbitMQClient
 
 
 class PcapResultService:
@@ -46,12 +47,14 @@ class PcapResultService:
             raise e
 
         n_streams = streams.to_packets()
-        packet_processor = PacketProcessor()
+
+        client = RabbitMQClient()
+        channel = await client.get_channel()
+
+        packet_processor = PacketProcessor(channel=channel)
 
         for stream_id, stream in n_streams['tcp_streams'].items():
-            # packet_processor.send_stream_rmq(stream)
-            pass
+            packet_processor.send_stream_rmq(stream)
 
         for stream_id, stream in n_streams['udp_streams'].items():
-            # packet_processor.send_stream_rmq(stream)
-            pass
+            packet_processor.send_stream_rmq(stream)

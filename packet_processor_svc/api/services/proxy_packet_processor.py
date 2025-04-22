@@ -79,7 +79,6 @@ class ProxyPacketProcessor:
         try:
             packet_data = pickle.loads(data)
             packet_data = PacketData.from_bytes(packet_data)
-            print(packet_data.packet.summary())
             self.packet_processor.process_packet(packet_data)
         except Exception as e:
             print(f"Error in packet processing: {e}")

@@ -1,5 +1,6 @@
 import pickle
 from collections import defaultdict
+from typing import List
 
 import pika
 from scapy.all import Packet
@@ -64,7 +65,7 @@ class PacketProcessor:
                     if stream:
                         self.send_stream_rmq(stream)
 
-    def send_stream_rmq(self, stream):
+    def send_stream_rmq(self, stream: List[PacketData]):
         try:
             byte_entries = [pkt_data.to_bytes() for pkt_data in stream]
             stream_rmq = pickle.dumps(byte_entries)
