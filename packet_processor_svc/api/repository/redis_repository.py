@@ -3,7 +3,7 @@ import pickle
 import redis.asyncio as redis
 from uuid import UUID
 
-from api.schemas.pcap_processor import UploadStatus, StreamSummary, FileProcessStatus
+from api.schemas.pcap_processor import UploadStatus, StreamSummary, ProcessStatus, SendRMQStatus
 
 
 class RedisConnection:
@@ -27,18 +27,27 @@ class PcapRedisRepository:
     def __init__(self, conn):
         self.connection = conn
 
-    async def update_status(self, status: UploadStatus, upload_id: UUID):
-        key_status = f"{upload_id}:status"
+    async def update_upload_status(self, status: UploadStatus, upload_id: UUID):
+        key_status = f"{upload_id}:upload_status"
         await self.connection.set(key_status, pickle.dumps(status))
 
     async def get_upload_status(self, upload_id: UUID):
-        key_status = f"{upload_id}:status"
+        key_status = f"{upload_id}:upload_status"
+        data = await self.connection.get(key_status)
+        return pickle.loads(data) if data else None
+
+    async def update_send_rmq_status(self, status: SendRMQStatus, upload_id: UUID):
+        key_status = f"{upload_id}:send_rmq_status"
+        await self.connection.set(key_status, pickle.dumps(status))
+
+    async def get_send_rmq_status(self, upload_id: UUID):
+        key_status = f"{upload_id}:send_rmq_status"
         data = await self.connection.get(key_status)
         return pickle.loads(data) if data else None
 
     async def check_processed_status(self, upload_id: UUID) -> bool:
         status = await self.get_upload_status(upload_id)
-        return status is not None and status.status == FileProcessStatus.Processed
+        return status is not None and status.status == ProcessStatus.Processed
 
     async def update_streams(self, streams: StreamSummary, upload_id: UUID):
         key_streams = f"{upload_id}:streams"

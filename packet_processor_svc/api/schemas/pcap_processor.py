@@ -3,14 +3,12 @@ from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing import Dict, List
-from scapy.all import Packet
-from scapy.compat import raw
+from typing import Dict, List, Optional
 
 from api.schemas.packet_data import PacketData
 
 
-class FileProcessStatus(str, Enum):
+class ProcessStatus(str, Enum):
     Running = "Started"
     Processed = "Processed"
     Crashed = "Crashed"
@@ -24,8 +22,14 @@ class TCPFlags(int, Enum):
 
 
 class UploadStatus(BaseModel):
-    status: FileProcessStatus
+    status: ProcessStatus
     upload_id: UUID
+
+
+class SendRMQStatus(BaseModel):
+    status: ProcessStatus
+    upload_id: UUID
+    description: Optional[str] = None
 
 
 class StreamSummary(BaseModel):

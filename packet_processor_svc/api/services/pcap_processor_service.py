@@ -4,14 +4,12 @@ from uuid import uuid4, UUID
 
 from scapy.layers.inet import TCP, UDP
 from scapy.packet import Packet
-from scapy.sendrecv import AsyncSniffer
-from scapy.sessions import IPSession
 from scapy.utils import PcapNgReader
 
 from api.exceptions.exceptions import UploadError
 from api.repository.redis_repository import PcapRedisRepository
 from api.schemas.packet_data import PacketData
-from api.schemas.pcap_processor import UploadStatus, FileProcessStatus, StreamSummary
+from api.schemas.pcap_processor import UploadStatus, ProcessStatus, StreamSummary
 from api.services.stream_key_extractor import StreamKeyExtractor
 
 
@@ -24,13 +22,12 @@ class PcapProcessorService:
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
 
-
     async def upload_file(self) -> UploadStatus:
         try:
             upload_id = uuid4()
-            status = UploadStatus(status=FileProcessStatus.Running, upload_id=upload_id)
+            status = UploadStatus(status=ProcessStatus.Running, upload_id=upload_id)
 
-            await self.redis.update_status(status, upload_id)
+            await self.redis.update_upload_status(status, upload_id)
             await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
 
         except Exception:
@@ -51,15 +48,15 @@ class PcapProcessorService:
                         continue
 
         except Exception as e:
-            status = UploadStatus(status=FileProcessStatus.Crashed, upload_id=upload_id)
-            await self.redis.update_status(status, upload_id)
+            status = UploadStatus(status=ProcessStatus.Crashed, upload_id=upload_id)
+            await self.redis.update_upload_status(status, upload_id)
             await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
             raise UploadError(f"Failed to process pcap file: {e}")
 
         await self._on_pcap_file_finished(upload_id)
 
     async def _on_pcap_file_finished(self, upload_id: UUID):
-        status = UploadStatus(status=FileProcessStatus.Processed, upload_id=upload_id)
+        status = UploadStatus(status=ProcessStatus.Processed, upload_id=upload_id)
         streams = StreamSummary.from_packets(
             tcp_streams=self.tcp_streams,
             udp_streams=self.udp_streams
@@ -68,13 +65,12 @@ class PcapProcessorService:
         print(len(self.tcp_streams))
         print(len(self.udp_streams))
 
-        await self.redis.update_status(status, upload_id)
+        await self.redis.update_upload_status(status, upload_id)
         await self.redis.update_streams(streams, upload_id)
 
     def process_packet(self, packet: Packet):
         timestamp = int(packet.time * 1_000_000_000)
-        print(timestamp)
-        packet_data = PacketData(packet=packet)
+        packet_data = PacketData(packet=packet, timestamp=timestamp)
 
         key, alt_key = StreamKeyExtractor(packet).stream_key
         if not key or not alt_key:
