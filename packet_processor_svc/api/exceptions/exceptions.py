@@ -8,3 +8,6 @@ class UploadNotFoundError(Exception):
 
 class NoStreamsError(Exception):
     pass
+
+class DataAlreadySentError(Exception):
+    pass

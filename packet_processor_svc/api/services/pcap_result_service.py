@@ -1,8 +1,9 @@
+import asyncio
 from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from api.exceptions.exceptions import UploadNotFoundError, NoStreamsError
+from api.exceptions.exceptions import UploadNotFoundError, NoStreamsError, DataAlreadySentError
 from api.repository.redis_repository import PcapRedisRepository
 from api.schemas.pcap_processor import UploadStatus, StreamSummary, SendRMQStatus, ProcessStatus
 from api.services.packet_processor import PacketProcessor
@@ -15,6 +16,12 @@ class PcapResultService:
 
     async def get_upload_status(self, upload_id: UUID) -> UploadStatus:
         result = await self.redis.get_upload_status(upload_id)
+        if not result:
+            raise UploadNotFoundError
+        return result
+
+    async def get_send_status(self, upload_id: UUID) -> UploadStatus:
+        result = await self.redis.get_send_rmq_status(upload_id)
         if not result:
             raise UploadNotFoundError
         return result
@@ -40,12 +47,21 @@ class PcapResultService:
         return streams
 
     async def send_to_rmq(self, upload_id: UUID) -> SendRMQStatus:
+        func_status = await self.redis.get_send_rmq_status(upload_id)
+        if func_status and func_status.status == ProcessStatus.Processed:
+            raise DataAlreadySentError
+
         try:
             streams = await self.get_streams(upload_id)
         except UploadNotFoundError as e:
             raise e
+        except NoStreamsError as e:
+            raise e
 
         n_streams = streams.to_packets()
+        func_status = SendRMQStatus(status=ProcessStatus.Running, upload_id=upload_id)
+        await self.redis.update_send_rmq_status(func_status, upload_id)
+
         try:
             client = RabbitMQClient()
             channel = await client.get_channel()
@@ -53,10 +69,15 @@ class PcapResultService:
 
             for stream_id, stream in n_streams['tcp_streams'].items():
                 packet_processor.send_stream_rmq(stream)
+
             for stream_id, stream in n_streams['udp_streams'].items():
                 packet_processor.send_stream_rmq(stream)
+
+            func_status = SendRMQStatus(status=ProcessStatus.Processed, upload_id=upload_id)
+            await self.redis.update_send_rmq_status(func_status, upload_id)
+
         except Exception as e:
             func_status = SendRMQStatus(status=ProcessStatus.Crashed, upload_id=upload_id, description=str(e))
             await self.redis.update_send_rmq_status(func_status, upload_id)
 
-        return SendRMQStatus(status=ProcessStatus.Processed, upload_id=upload_id)
+        return func_status
