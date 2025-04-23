@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status, UploadFile, File, HTTPException
 import tempfile
-from api.exceptions.exceptions import UploadError, UploadNotFoundError
+from api.exceptions.exceptions import UploadError, UploadNotFoundError, NoStreamsError, DataAlreadySentError
 from api.repository.redis_repository import RedisConnection, PcapRedisRepository
 from api.schemas.pcap_processor import UploadStatus, StreamSummary, SendRMQStatus
 from api.services.pcap_processor_service import PcapProcessorService
@@ -47,6 +47,22 @@ async def send_streams_to_rmq(upload_id: UUID):
         pcap_result_service = PcapResultService(redis)
         try:
             result = await pcap_result_service.send_to_rmq(upload_id)
+        except UploadNotFoundError:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        except NoStreamsError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        except DataAlreadySentError as e:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This file has already been processed.")
+    return result
+
+
+@router.get("/send/{upload_id}", status_code=status.HTTP_200_OK, response_model=SendRMQStatus)
+async def get_send_status(upload_id: UUID):
+    async with RedisConnection() as connection:
+        redis = PcapRedisRepository(connection.redis)
+        pcap_result_service = PcapResultService(redis)
+        try:
+            result = await pcap_result_service.get_send_status(upload_id)
         except UploadNotFoundError:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return result
