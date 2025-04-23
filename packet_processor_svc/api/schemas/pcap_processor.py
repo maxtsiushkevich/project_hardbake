@@ -9,7 +9,7 @@ from api.schemas.packet_data import PacketData
 
 
 class ProcessStatus(str, Enum):
-    Running = "Started"
+    Running = "Running"
     Processed = "Processed"
     Crashed = "Crashed"
 
@@ -52,11 +52,11 @@ class StreamSummary(BaseModel):
     def to_packets(self):
         return {
             "tcp_streams": {
-                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
+                k: (PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v)
                 for k, v in self.tcp_streams.items()
             },
             "udp_streams": {
-                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
+                k: (PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v)
                 for k, v in self.udp_streams.items()
             }
         }
