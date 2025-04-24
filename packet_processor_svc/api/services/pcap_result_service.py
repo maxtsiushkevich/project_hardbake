@@ -46,7 +46,7 @@ class PcapResultService:
 
         return streams
 
-    async def send_to_rmq(self, upload_id: UUID) -> SendRMQStatus:
+    async def send_to_rmq(self, upload_id: UUID):
         func_status = await self.redis.get_send_rmq_status(upload_id)
         if func_status and func_status.status == ProcessStatus.Processed:
             raise DataAlreadySentError
@@ -79,5 +79,3 @@ class PcapResultService:
         except Exception as e:
             func_status = SendRMQStatus(status=ProcessStatus.Crashed, upload_id=upload_id, description=str(e))
             await self.redis.update_send_rmq_status(func_status, upload_id)
-
-        return func_status

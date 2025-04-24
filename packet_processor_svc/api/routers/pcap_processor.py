@@ -1,10 +1,11 @@
+import asyncio
 from uuid import UUID
 
 from fastapi import APIRouter, status, UploadFile, File, HTTPException
 import tempfile
 from api.exceptions.exceptions import UploadError, UploadNotFoundError, NoStreamsError, DataAlreadySentError
 from api.repository.redis_repository import RedisConnection, PcapRedisRepository
-from api.schemas.pcap_processor import UploadStatus, StreamSummary, SendRMQStatus
+from api.schemas.pcap_processor import UploadStatus, StreamSummary, SendRMQStatus, ProcessStatus
 from api.services.pcap_processor_service import PcapProcessorService
 from api.services.pcap_result_service import PcapResultService
 
@@ -46,14 +47,14 @@ async def send_streams_to_rmq(upload_id: UUID):
         redis = PcapRedisRepository(connection.redis)
         pcap_result_service = PcapResultService(redis)
         try:
-            result = await pcap_result_service.send_to_rmq(upload_id)
+            asyncio.create_task(pcap_result_service.send_to_rmq(upload_id))
         except UploadNotFoundError:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         except NoStreamsError as e:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         except DataAlreadySentError as e:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This file has already been processed.")
-    return result
+    return SendRMQStatus(status=ProcessStatus.Running, upload_id=upload_id)
 
 
 @router.get("/send/{upload_id}", status_code=status.HTTP_200_OK, response_model=SendRMQStatus)
