@@ -3,8 +3,10 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from starlette import status
 
-from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady
-from api.schemas.ml import ModelHyperparameters, TrainingStatus
+from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady, InvalidHyperparametersError, \
+    UpdateMinSamplesException
+from api.schemas.ml import ModelHyperparameters, TrainingStatus, ModelSettings, TrainingInfoResponse, \
+    StatusResponse, Status, UpdateHyperparametersResponse, UpdateStatus, UpdateMinSamples
 from api.services.ml_data_processor import MLDataProcessor
 from api.services.model_storage import ModelStorage
 from api.utils.rabbitmq import RabbitMQClient
@@ -15,12 +17,12 @@ model_storage = ModelStorage()
 ml_processor = MLDataProcessor(RabbitMQClient(), model_storage)
 
 
-@router.post("/start_consuming")
+@router.post("/start_consuming", response_model=StatusResponse)
 async def start_consuming():
     try:
         await ml_processor.start_consuming()
         model_storage.training_status = TrainingStatus.COLLECTING_DATA
-        return {"status": "started"}
+        return StatusResponse(status=Status.STARTED)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -28,11 +30,11 @@ async def start_consuming():
         )
 
 
-@router.post("/stop_consuming")
+@router.post("/stop_consuming", response_model=StatusResponse)
 async def stop_consuming():
     try:
         await ml_processor.stop_consuming()
-        return {"status": "stopped"}
+        return StatusResponse(status=Status.STOPPED)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -40,11 +42,11 @@ async def stop_consuming():
         )
 
 
-@router.post("/train")
+@router.post("/train", response_model=StatusResponse)
 async def train():
     try:
-        asyncio.create_task(model_storage.train_models())  # запускаем в фоне
-        return {"status": "started"}
+        asyncio.create_task(model_storage.train_models())
+        return StatusResponse(status=Status.STARTED)
     except NotEnoughTrainingRecords:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -52,20 +54,25 @@ async def train():
         )
 
 
-@router.get("/status")
-async def get_status():
-    return {
-        "status": model_storage.training_status,
-        "collected_samples": model_storage.get_len_of_training_data(),
-        "min_samples_for_training": model_storage.min_samples_for_training
-    }
+@router.get("/status", response_model=TrainingInfoResponse)
+async def get_training_info():
+    try:
+        result = await model_storage.get_training_status()
+        return TrainingInfoResponse(**result)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get current settings: {str(e)}"
+        )
 
 
-@router.post("/update_hyperparameters")
+@router.post("/update_hyperparameters", response_model=UpdateHyperparametersResponse)
 async def update_hyperparameters(params: ModelHyperparameters):
     try:
-        model_storage.hyperparameters = params
-        return {"status": "updated"}
+        await model_storage.update_hyperparameters(params.model_dump())
+        return UpdateHyperparametersResponse(status=UpdateStatus.UPDATED, hyperparameters=params)
+    except InvalidHyperparametersError as e:
+        return UpdateHyperparametersResponse(status=UpdateStatus.ERROR, hyperparameters=params)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -101,27 +108,21 @@ async def load_models(path: str = "models.joblib"):
         )
 
 
-@router.post("/set_min_samples")
-async def set_min_samples(min_samples: int):
-    if min_samples < 100:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Minimum samples should be at least 100"
-        )
-    model_storage.min_samples_for_training = min_samples
-    return {"status": "updated", "min_samples": min_samples}
-
-
-@router.get("/current_settings", response_model=dict)
-async def get_current_settings():
-    """Returns the current hyperparameter and training parameter settings"""
+@router.post("/set_min_samples", response_model=UpdateMinSamples)
+async def set_min_samples_for_training(min_samples: int):
     try:
-        return {
-            "hyperparameters": model_storage.hyperparameters.model_dump(),
-            "min_samples_for_training": model_storage.min_samples_for_training,
-            "current_samples": model_storage.get_len_of_training_data(),
-            "training_status": model_storage.training_status
-        }
+        await model_storage.update_min_samples(min_samples)
+    except UpdateMinSamplesException as e:
+        return UpdateMinSamples(min_samples=min_samples, status=UpdateStatus.ERROR, error_info=str(e))
+
+    return UpdateMinSamples(min_samples=min_samples, status=UpdateStatus.UPDATED)
+
+
+@router.get("/current_settings", response_model=ModelSettings)
+async def get_current_settings():
+    try:
+        result = await model_storage.get_current_settings()
+        return ModelSettings(**result)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

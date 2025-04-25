@@ -1,5 +1,4 @@
 import logging
-import pickle
 
 from api.schemas.data_record import DataRecord
 from api.services.model_storage import ModelStorage

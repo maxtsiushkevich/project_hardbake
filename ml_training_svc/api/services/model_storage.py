@@ -2,11 +2,13 @@ import logging
 import sqlite3
 from typing import Optional
 import numpy as np
+from pydantic import ValidationError
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import RobustScaler
 from sklearn.svm import OneClassSVM
 
-from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady
+from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady, InvalidHyperparametersError, \
+    UpdateMinSamplesException
 from api.schemas.data_record import DataRecord
 from api.schemas.ml import TrainingStatus, ModelHyperparameters
 
@@ -16,12 +18,43 @@ class ModelStorage:
         self.isolation_forest: Optional[IsolationForest] = None
         self.one_class_svm: Optional[OneClassSVM] = None
         self.training_status: TrainingStatus = TrainingStatus.NOT_STARTED
-        self.min_samples_for_training: int = 100000
+        self.min_samples_for_training: int = 100
         self.hyperparameters: ModelHyperparameters = ModelHyperparameters()
 
-        # Initialize database
         self.db_path = db_path
         self._init_db()
+
+    async def update_hyperparameters(self, new_hyperparameters: dict):
+        try:
+            validated_params = ModelHyperparameters(**new_hyperparameters)
+            self.hyperparameters = validated_params
+        except ValidationError as e:
+            raise InvalidHyperparametersError(f"Invalid hyperparameters: {str(e)}")
+        except Exception as e:
+            raise InvalidHyperparametersError(f"Failed to update hyperparameters: {str(e)}")
+
+    async def update_min_samples(self, min_samples: int):
+        if min_samples < 0:
+            raise UpdateMinSamplesException(f"Minimum samples cannot be negative")
+        if min_samples < 100:
+            raise UpdateMinSamplesException(f"Minimum samples for training cannot be less than 100")
+
+        self.min_samples_for_training = min_samples
+
+    async def get_current_settings(self):
+        return {
+            "hyperparameters": self.hyperparameters,
+            "training_status": self.training_status,
+            "min_samples_for_training": self.min_samples_for_training,
+            "current_samples": self.get_len_of_training_data()
+        }
+
+    async def get_training_status(self):
+        return {
+            "training_status": self.training_status,
+            "collected_samples": self.get_len_of_training_data(),
+            "min_samples_for_training": self.min_samples_for_training
+        }
 
     def _init_db(self):
         """Initialize the SQLite database with the appropriate table structure."""

@@ -4,3 +4,11 @@ class ModelsNotReady(Exception):
 
 class NotEnoughTrainingRecords(Exception):
     pass
+
+
+class InvalidHyperparametersError(Exception):
+    pass
+
+
+class UpdateMinSamplesException(Exception):
+    pass
