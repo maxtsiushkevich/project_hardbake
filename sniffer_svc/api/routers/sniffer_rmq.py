@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, status
-from uuid import UUID
-from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError
-from api.schemas.sniffer import SniffListResponse, StartSniffDetails, SniffDetails, SniffStatus, SniffFilter
+from uuid import UUID, uuid4
+from datetime import datetime
+
+from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError, RabbitMQError
+from api.schemas.sniffer import SniffListResponse, SniffDetails, SniffStatus, SniffFilter, StartSniffDetails
 from api.repository.redis_repository import RedisConnection, RedisRepository
 from api.services.sniffer_service import SnifferService
 
@@ -10,17 +12,22 @@ router = APIRouter(prefix="/sniffer-rmq", tags=["Sniffer"])
 
 @router.post("/start", status_code=status.HTTP_202_ACCEPTED, response_model=StartSniffDetails)
 async def start_sniff(iface: str, write_in_file: bool = False, filter_params: SniffFilter | None = None):
-    async with RedisConnection() as connection:
+    async with (RedisConnection() as connection):
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         bpf_filter = filter_params.to_bpf() if filter_params else None
         try:
-            result = await sniffer_service.start(iface, bpf_filter, write_in_file)
-        except SniffAlreadyRunningError:
-            raise HTTPException(status_code=409, detail=f"Sniff on interface {iface} already running")
+            sniff_id = uuid4()
 
-    return StartSniffDetails(**result.dict())
+            time = datetime.now()
+            await sniffer_service.start(iface, sniff_id, time, bpf_filter, write_in_file)
+            return StartSniffDetails(sniff_id=sniff_id, start_at=time, interface=iface)
+        except SniffAlreadyRunningError:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT,
+                                detail=f"Sniff on interface {iface} already running")
+        except RabbitMQError as e:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
 
 @router.patch("/stop", response_model=SniffDetails)
@@ -32,7 +39,7 @@ async def stop_sniff(sniff_id: UUID):
         try:
             sniff = await sniffer_service.stop(sniff_id)
         except SniffNotFoundError:
-            raise HTTPException(status_code=404, detail=f"Sniff {sniff_id} not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sniff {sniff_id} not found")
 
     return SniffDetails(**sniff.dict())
 
