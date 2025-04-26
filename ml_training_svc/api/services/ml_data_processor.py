@@ -32,10 +32,6 @@ class MLDataProcessor:
             data_record = DataRecord.model_validate_json(body)
 
             self.model_storage.add_data(data_record)
-
-            if self.model_storage.get_len_of_training_data() >= self.model_storage.min_samples_for_training:
-                self.start_consuming()
-
         except Exception as e:
             logging.error(f"Error processing message: {str(e)}")
 

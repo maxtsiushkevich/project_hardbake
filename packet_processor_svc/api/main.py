@@ -8,7 +8,6 @@ from api.monitoring.prometheus import metrics, instrumentator
 from api.repository.redis_repository import RedisConnection
 from api.routers.management_router import router as management_router
 from api.routers.pcap_processor import router as packet_router
-from api.utils.rabbitmq import RabbitMQClient
 
 load_dotenv()
 
