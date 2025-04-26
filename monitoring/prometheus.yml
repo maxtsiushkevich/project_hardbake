@@ -26,3 +26,13 @@ scrape_configs:
     metrics_path: "/metrics"
     static_configs:
       - targets: [ "host.docker.internal:8003" ]
+
+  - job_name: "ml_training_svc"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [ "host.docker.internal:8004" ]
+
+  - job_name: "threat_detection_svc"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: [ "host.docker.internal:8005" ]
