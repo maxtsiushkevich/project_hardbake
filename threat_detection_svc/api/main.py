@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from api.monitoring.prometheus import metrics, instrumentator
-from api.routers.detect import router as detection_router
+from api.routers.detect_router import router as detection_router
 
 load_dotenv()
 

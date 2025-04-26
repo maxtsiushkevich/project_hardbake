@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from starlette import status
 
 from api.exceptions.exceptions import ModelUploadError
-from api.schemas.detect import StartStopResponse, DetectionStatusResponse, DetectionStatusEnum
+from api.schemas.detect import StartStopResponse, DetectionStatusResponse, DetectionStatusEnum, BatchSizeResponse
 from api.services.data_processor import DataProcessor
 from api.services.model_storage import ModelStorage
 from api.utils.rabbitmq import RabbitMQClient
@@ -58,18 +58,24 @@ async def get_detection_status():
     return DetectionStatusResponse(status=detection_status)
 
 
-@router.post("/set_batch_size")
+@router.patch("/set_batch_size", response_model=BatchSizeResponse)
 async def set_batch_size(size: int):
     try:
-        model_storage.set_batch_size(size)
-        return {"status": "success", "batch_size": size}
+        await model_storage.set_batch_size(size)
+        return BatchSizeResponse(size=size)
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
         )
-    except Exception as e:
+
+@router.get("/get_batch_size", response_model=BatchSizeResponse)
+async def get_batch_size():
+    try:
+        result = await model_storage.get_batch_size()
+        return BatchSizeResponse(size=result)
+    except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to set batch size: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
         )

@@ -1,31 +1,4 @@
-# from typing import Optional
-# from sklearn.ensemble import IsolationForest
-# from sklearn.svm import OneClassSVM
-#
-# from api.exceptions.exceptions import ModelUploadError
-# from api.schemas.data_record import DataRecord
-#
-#
-# class ModelStorage:
-#     def __init__(self):
-#         self.isolation_forest: Optional[IsolationForest] = None
-#         self.one_class_svm: Optional[OneClassSVM] = None
-#
-#         self.batch_size: int = 1_000
-#
-#     def load_models(self, path: str):
-#         import joblib
-#         try:
-#             models = joblib.load(path)
-#             self.isolation_forest = models['isolation_forest']
-#             self.one_class_svm = models['one_class_svm']
-#         except Exception as e:
-#             raise ModelUploadError(f"Error loading models: {str(e)}")
-#
-#     def add_data(self, data: DataRecord):
-#         pass
-
-from typing import Optional, List, Dict, Any
+from typing import Optional, List
 import numpy as np
 import pika
 from sklearn.ensemble import IsolationForest
@@ -54,10 +27,13 @@ class ModelStorage:
         except Exception as e:
             raise ModelUploadError(f"Error loading models: {str(e)}")
 
-    def set_batch_size(self, size: int):
-        if size <= 0:
-            raise ValueError("Batch size must be positive")
+    async def set_batch_size(self, size: int):
+        if size <= 100:
+            raise ValueError("Minimum batch size is 100")
         self.batch_size = size
+
+    async def get_batch_size(self):
+        return self.batch_size
 
     async def add_data(self, data: DataRecord):
         self._current_batch.append(data)

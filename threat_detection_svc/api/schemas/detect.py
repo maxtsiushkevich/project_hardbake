@@ -17,3 +17,6 @@ class StartStopResponse(BaseModel):
 class DetectionStatusResponse(BaseModel):
     status: DetectionStatusEnum
     error: Optional[str] = None
+
+class BatchSizeResponse(BaseModel):
+    size: int
