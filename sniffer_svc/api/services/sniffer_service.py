@@ -10,7 +10,7 @@ class SnifferService:
 
     def __init__(self, redis: RedisRepository):
         self.redis = redis
-        self.sniffer_util = SnifferUtil()
+        self.sniffer_util: SnifferUtil = SnifferUtil()
 
     async def start(self, iface: str, sniff_id, time, filters: str | None = None, write_in_file: bool = False):
 
