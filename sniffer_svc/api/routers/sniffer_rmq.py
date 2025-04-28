@@ -82,7 +82,7 @@ async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = No
             response_model=SniffDetails,
             responses={
                 200: {"description": "OK"},
-                404: {"description": "There are no sniffing session with the specified ID was found"},
+                404: {"description": "There is no sniffing session with the specified ID was found"},
             }
             )
 async def get_sniff_details(task_id: UUID):
@@ -101,7 +101,7 @@ async def get_sniff_details(task_id: UUID):
             response_model=SniffListResponse,
             responses={
                 200: {"description": "OK"},
-                404: {"description": "There are no sniffing session with the specified ID was found"},
+                404: {"description": "There are no sniffing sessions with the specified status was found"},
             }
             )
 async def get_sniffs_by_status(target_status: SniffStatus):
