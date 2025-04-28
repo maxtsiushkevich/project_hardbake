@@ -44,17 +44,13 @@ class ModelStorage:
         if not self._current_batch or not self.isolation_forest or not self.one_class_svm:
             return
 
-        # Convert batch to feature matrix
         features = self._convert_to_features()
 
-        # Detect anomalies
         if_anomalies = self.isolation_forest.predict(features)
         svm_anomalies = self.one_class_svm.predict(features)
 
-        # Combine results
         combined_anomalies = (if_anomalies == -1) | (svm_anomalies == -1)
 
-        # Process anomalies
         await self._handle_anomalies(self._current_batch, combined_anomalies)
 
         # Clear current batch

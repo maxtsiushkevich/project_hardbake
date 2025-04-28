@@ -140,7 +140,6 @@ class ModelStorage:
         return scaled_data
 
     async def train_models(self):
-        print('start')
         with sqlite3.connect(self.db_path) as conn:
             count = conn.execute('SELECT COUNT(*) FROM training_data').fetchone()[0]
 
@@ -175,7 +174,6 @@ class ModelStorage:
                 raise
         else:
             raise NotEnoughTrainingRecords
-        print('goaaaal')
 
     def save_models(self, path: str):
         """Save trained models to disk."""
