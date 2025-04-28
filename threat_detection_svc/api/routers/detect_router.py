@@ -23,7 +23,14 @@ ALLOWED_EXTENSIONS = {".joblib", ".pkl"}
 Path(MODELS_DIR).mkdir(exist_ok=True)
 
 
-@router.post("/start", response_model=StartStopResponse)
+@router.post("/start",
+             response_model=StartStopResponse,
+             responses={
+                 200: {"description": "OK"},
+                 500: {"description": "Internal Server Error"},
+                 503: {"description": "RabbitMQ is not available"},
+             }
+             )
 async def start_detect():
     try:
         await processor.start()
@@ -36,7 +43,12 @@ async def start_detect():
         )
 
 
-@router.post("/stop", response_model=StartStopResponse)
+@router.post("/stop", response_model=StartStopResponse,
+             responses={
+                 200: {"description": "OK"},
+                 500: {"description": "Internal Server Error"},
+             }
+             )
 async def stop_detect():
     try:
         await processor.stop()
@@ -96,7 +108,13 @@ async def get_detection_status():
     return DetectionStatusResponse(status=detection_status)
 
 
-@router.patch("/set_batch_size", response_model=BatchSizeResponse)
+@router.patch("/set_batch_size",
+              response_model=BatchSizeResponse,
+              responses={
+                  200: {"description": "OK"},
+                  400: {"description": "Incorrect batch size"},
+              }
+              )
 async def set_batch_size(size: int):
     try:
         await model_storage.set_batch_size(size)
@@ -108,13 +126,19 @@ async def set_batch_size(size: int):
         )
 
 
-@router.get("/get_batch_size", response_model=BatchSizeResponse)
+@router.get("/get_batch_size",
+            response_model=BatchSizeResponse,
+            responses={
+                200: {"description": "OK"},
+                500: {"description": "Internal Server Error"},
+            }
+            )
 async def get_batch_size():
     try:
         result = await model_storage.get_batch_size()
         return BatchSizeResponse(size=result)
-    except ValueError as e:
+    except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
         )
