@@ -10,7 +10,7 @@ router = APIRouter(prefix="/interfaces", tags=["Interfaces"])
 @router.get("/",
             response_model=InterfacesListResponse,
             responses={
-                200: {"description": "Models uploaded successfully"},
+                200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
             })
 async def get_interfaces_list():
@@ -23,7 +23,7 @@ async def get_interfaces_list():
 @router.get("/all",
             response_model=list[NetworkInterfaceSchema],
             responses={
-                200: {"description": "Models uploaded successfully"},
+                200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
             })
 async def get_interfaces():
@@ -36,7 +36,7 @@ async def get_interfaces():
 @router.get("/{iface}",
             response_model=NetworkInterfaceSchema,
             responses={
-                200: {"description": "Models uploaded successfully"},
+                200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
             })
 async def get_interface_description(iface: str):
@@ -50,7 +50,7 @@ async def get_interface_description(iface: str):
 @router.get("/{iface}/info",
             response_model=InterfaceInfo,
             responses={
-                200: {"description": "Models uploaded successfully"},
+                200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
             })
 async def get_interface_info(iface: str):
@@ -64,7 +64,7 @@ async def get_interface_info(iface: str):
 @router.get("/{iface}/stat",
             response_model=InterfaceStats,
             responses={
-                200: {"description": "Models uploaded successfully"},
+                200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
             })
 async def get_interface_stats(iface: str):
