@@ -7,7 +7,12 @@ from api.schemas.interface import NetworkInterfaceSchema, InterfacesListResponse
 router = APIRouter(prefix="/interfaces", tags=["Interfaces"])
 
 
-@router.get("/", response_model=InterfacesListResponse)
+@router.get("/",
+            response_model=InterfacesListResponse,
+            responses={
+                200: {"description": "Models uploaded successfully"},
+                404: {"description": "Interfaces not found"},
+            })
 async def get_interfaces_list():
     names = NetworkInterfacesService.get_interfaces_name_list()
     if not names:
@@ -15,7 +20,12 @@ async def get_interfaces_list():
     return InterfacesListResponse(interfaces=names)
 
 
-@router.get("/all", response_model=list[NetworkInterfaceSchema])
+@router.get("/all",
+            response_model=list[NetworkInterfaceSchema],
+            responses={
+                200: {"description": "Models uploaded successfully"},
+                404: {"description": "Interfaces not found"},
+            })
 async def get_interfaces():
     interfaces = NetworkInterfacesService.get_interfaces_json()
     if not interfaces:
@@ -23,7 +33,12 @@ async def get_interfaces():
     return interfaces
 
 
-@router.get("/{iface}", response_model=NetworkInterfaceSchema)
+@router.get("/{iface}",
+            response_model=NetworkInterfaceSchema,
+            responses={
+                200: {"description": "Models uploaded successfully"},
+                404: {"description": "Interfaces not found"},
+            })
 async def get_interface_description(iface: str):
     try:
         interface = NetworkInterface(name=iface).to_dict()
@@ -32,7 +47,12 @@ async def get_interface_description(iface: str):
     return interface
 
 
-@router.get("/{iface}/info", response_model=InterfaceInfo)
+@router.get("/{iface}/info",
+            response_model=InterfaceInfo,
+            responses={
+                200: {"description": "Models uploaded successfully"},
+                404: {"description": "Interfaces not found"},
+            })
 async def get_interface_info(iface: str):
     try:
         info = NetworkInterface(name=iface).info
@@ -41,7 +61,12 @@ async def get_interface_info(iface: str):
     return info
 
 
-@router.get("/{iface}/stat", response_model=InterfaceStats)
+@router.get("/{iface}/stat",
+            response_model=InterfaceStats,
+            responses={
+                200: {"description": "Models uploaded successfully"},
+                404: {"description": "Interfaces not found"},
+            })
 async def get_interface_stats(iface: str):
     try:
         stats = NetworkInterface(name=iface).stats
