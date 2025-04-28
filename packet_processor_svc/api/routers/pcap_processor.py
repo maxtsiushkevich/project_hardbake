@@ -12,7 +12,14 @@ from api.services.pcap_result_service import PcapResultService
 router = APIRouter(prefix="/pcap", tags=["PCAP Files Processor"])
 
 
-@router.post("/upload-pcap", status_code=status.HTTP_202_ACCEPTED, response_model=UploadStatus)
+@router.post("/upload-pcap",
+             status_code=status.HTTP_202_ACCEPTED,
+             response_model=UploadStatus,
+             responses={
+                 200: {"description": "OK"},
+                 500: {"description": "Error while uploading pcap"},
+             }
+             )
 async def upload_pcap(file: UploadFile = File(...)):
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         content = await file.read()
@@ -29,7 +36,14 @@ async def upload_pcap(file: UploadFile = File(...)):
     return result
 
 
-@router.get("/status/{upload_id}", status_code=status.HTTP_200_OK, response_model=UploadStatus)
+@router.get("/status/{upload_id}",
+            status_code=status.HTTP_200_OK,
+            response_model=UploadStatus,
+            responses={
+                200: {"description": "OK"},
+                404: {"description": "Upload with request ID not found"},
+            }
+            )
 async def get_status(upload_id: UUID):
     async with RedisConnection() as connection:
         redis = PcapRedisRepository(connection.redis)
@@ -41,7 +55,15 @@ async def get_status(upload_id: UUID):
     return result
 
 
-@router.post("/send/{upload_id}", status_code=status.HTTP_200_OK, response_model=SendRMQStatus)
+@router.post("/send/{upload_id}",
+             status_code=status.HTTP_200_OK,
+             response_model=SendRMQStatus,
+             responses={
+                 200: {"description": "OK"},
+                 404: {"description": "Upload with request ID not found"},
+                 409: {"description": "Upload with request ID already been processed"},
+             }
+             )
 async def send_streams_to_rmq(upload_id: UUID):
     async with RedisConnection() as connection:
         redis = PcapRedisRepository(connection.redis)
@@ -57,7 +79,14 @@ async def send_streams_to_rmq(upload_id: UUID):
     return SendRMQStatus(status=ProcessStatus.Running, upload_id=upload_id)
 
 
-@router.get("/send/{upload_id}", status_code=status.HTTP_200_OK, response_model=SendRMQStatus)
+@router.get("/send/{upload_id}",
+            status_code=status.HTTP_200_OK,
+            response_model=SendRMQStatus,
+            responses={
+                200: {"description": "OK"},
+                404: {"description": "Upload with request ID not found"},
+            }
+            )
 async def get_send_status(upload_id: UUID):
     async with RedisConnection() as connection:
         redis = PcapRedisRepository(connection.redis)
@@ -69,7 +98,14 @@ async def get_send_status(upload_id: UUID):
     return result
 
 
-@router.get("/{upload_id}/streams", status_code=status.HTTP_200_OK, response_model=StreamSummary)
+@router.get("/{upload_id}/streams",
+            status_code=status.HTTP_200_OK,
+            response_model=StreamSummary,
+            responses={
+                200: {"description": "OK"},
+                404: {"description": "Upload with request ID not found"},
+            }
+            )
 async def get_streams(upload_id: UUID):
     async with RedisConnection() as connection:
         redis = PcapRedisRepository(connection.redis)
