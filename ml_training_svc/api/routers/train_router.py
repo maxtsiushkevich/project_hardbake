@@ -1,20 +1,31 @@
 import asyncio
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from starlette import status
 
 from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady, InvalidHyperparametersError, \
     UpdateMinSamplesException
 from api.schemas.ml import ModelHyperparameters, TrainingStatus, ModelSettings, TrainingInfoResponse, \
-    StatusResponse, Status, UpdateHyperparametersResponse, UpdateStatus, UpdateMinSamples
+    StatusResponse, Status, UpdateHyperparametersResponse, UpdateStatus, UpdateMinSamples, UploadStatusResponse, \
+    UploadStatus
 from api.services.ml_data_processor import MLDataProcessor
 from api.services.model_storage import ModelStorage
 from api.utils.rabbitmq import RabbitMQClient
+
+from fastapi.responses import FileResponse
+from pathlib import Path
+import os
 
 router = APIRouter(prefix="/ml", tags=["Machine Learning"])
 
 model_storage = ModelStorage()
 ml_processor = MLDataProcessor(RabbitMQClient(), model_storage)
+
+MODELS_DIR = "models"
+MODEL_FILENAME = "trained_models.joblib"
+ALLOWED_EXTENSIONS = {".joblib", ".pkl"}
+
+Path(MODELS_DIR).mkdir(exist_ok=True)
 
 
 @router.post("/start_consuming", response_model=StatusResponse)
@@ -80,31 +91,91 @@ async def update_hyperparameters(params: ModelHyperparameters):
         )
 
 
-@router.post("/save_models")
-async def save_models(path: str = "models.joblib"):
+@router.get(
+    "/download_models/",
+    responses={
+        200: {
+            "content": {"application/octet-stream": {}},
+            "description": "Model file downloaded successfully",
+        },
+        204: {"description": "Models are not ready for download"},
+        500: {"description": "Server error while downloading file"},
+    }
+)
+async def download_models():
     try:
-        model_storage.save_models(path)
-        return {"status": "saved", "path": path}
+        file_path = Path(MODELS_DIR) / MODEL_FILENAME
+
+        model_storage.save_models(str(file_path))
+
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_204_NO_CONTENT,
+                detail="Model file not found. Train models first"
+            )
+
+        if model_storage.training_status != TrainingStatus.READY:
+            raise ModelsNotReady()
+
+        return FileResponse(
+            path=file_path,
+            filename=MODEL_FILENAME,
+            media_type="application/octet-stream"
+        )
 
     except ModelsNotReady as e:
-        raise HTTPException(status_code=status.HTTP_204_NO_CONTENT,
-                            detail='Models not ready')
+        raise HTTPException(
+            status_code=status.HTTP_204_NO_CONTENT,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error downloading file: {str(e)}"
         )
 
 
-@router.post("/load_models")
-async def load_models(path: str = "models.joblib"):
+@router.post(
+    "/upload_models/",
+    responses={
+        200: {"description": "Models uploaded successfully"},
+        400: {"description": "Invalid file format"},
+        500: {"description": "Server error while uploading file"},
+    },
+    response_model=UploadStatusResponse
+)
+async def upload_models(
+        file: UploadFile = File(..., description="Model file for download")
+):
+    save_path = Path(MODELS_DIR) / MODEL_FILENAME
     try:
-        model_storage.load_models(path)
-        return {"status": "loaded", "path": path}
+        file_ext = Path(file.filename).suffix.lower()
+        if file_ext not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid file format. Allowed formats: {', '.join(ALLOWED_EXTENSIONS)}"
+            )
+
+        with open(save_path, "wb") as buffer:
+            buffer.write(await file.read())
+
+        model_storage.load_models(str(save_path))
+
+        return UploadStatusResponse(status=UploadStatus.UPLOADED)
+
+    except HTTPException:
+        raise
     except Exception as e:
+        if save_path.exists():
+            try:
+                os.remove(save_path)
+            except:
+                pass
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error loading file: {str(e)}"
         )
 
 

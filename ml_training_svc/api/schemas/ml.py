@@ -65,6 +65,15 @@ class UpdateHyperparametersResponse(BaseModel):
     hyperparameters: ModelHyperparameters
 
 
+class UploadStatus(str, Enum):
+    UPLOADED = 'Uploaded'
+    ERROR = 'Error'
+
+
+class UploadStatusResponse(BaseModel):
+    status: UploadStatus
+
+
 class UpdateMinSamples(BaseModel):
     min_samples: int
     status: UpdateStatus
