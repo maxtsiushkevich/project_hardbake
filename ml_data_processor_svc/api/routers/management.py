@@ -11,26 +11,38 @@ proxy_packet_processor = StreamProcessor()
 consumer_manager = ConsumerManager(proxy_packet_processor)
 
 
-@router.post("/start", response_model=StartStopResponse)
+@router.post("/start",
+             response_model=StartStopResponse,
+             responses={
+                 200: {"description": "OK"},
+                 503: {"description": "RabbitMQ not available"},
+             }
+             )
 async def start_consumer_endpoint():
     try:
         response = await consumer_manager.start()
         return StartStopResponse(status=response["status"])
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Failed to start consumer: {str(e)}"
         )
 
 
-@router.post("/stop", response_model=StartStopResponse)
+@router.post("/stop",
+             response_model=StartStopResponse,
+             responses={
+                 200: {"description": "OK"},
+                 503: {"description": "RabbitMQ not available"},
+             }
+             )
 async def stop_consumer_endpoint():
     try:
         response = await consumer_manager.stop()
         return StartStopResponse(status=response["status"])
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=f"Failed to stop consumer: {str(e)}"
         )
 
