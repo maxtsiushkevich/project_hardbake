@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.train_router import router as train_router
@@ -18,6 +19,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Training Service')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 instrumentator.instrument(app, metric_namespace="ml_training_svc").expose(app)
 
