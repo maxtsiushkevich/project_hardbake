@@ -8,7 +8,7 @@ from api.schemas.data_record import DataRecord
 from api.utils.rabbitmq import RabbitMQClient
 
 
-class ModelStorage:
+class DetectionService:
     def __init__(self):
         self.isolation_forest: Optional[IsolationForest] = None
         self.one_class_svm: Optional[OneClassSVM] = None

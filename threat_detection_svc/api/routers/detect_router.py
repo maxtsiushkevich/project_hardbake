@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from starlette import status
 
-from api.exceptions.exceptions import ModelUploadError, RabbitMQError
+from api.exceptions.exceptions import RabbitMQError
 from api.schemas.detect import StartStopResponse, DetectionStatusResponse, DetectionStatusEnum, BatchSizeResponse, \
     UploadStatusResponse, UploadStatus
 from api.services.data_processor import DataProcessor
-from api.services.model_storage import ModelStorage
+from api.services.detection_service import DetectionService
 from api.utils.rabbitmq import RabbitMQClient
 
 from pathlib import Path
@@ -13,7 +13,7 @@ import os
 
 router = APIRouter(prefix="/detect", tags=["Detection management"])
 
-model_storage = ModelStorage()
+model_storage = DetectionService()
 processor = DataProcessor(RabbitMQClient(), model_storage)
 
 MODELS_DIR = "models"

@@ -3,12 +3,12 @@ import asyncio
 from api.exceptions.exceptions import RabbitMQError
 from api.schemas.data_record import DataRecord
 from api.schemas.detect import DetectionStatusEnum
-from api.services.model_storage import ModelStorage
+from api.services.detection_service import DetectionService
 from api.utils.rabbitmq import RabbitMQClient
 
 
 class DataProcessor:
-    def __init__(self, rabbitmq_client: RabbitMQClient, model_storage: ModelStorage):
+    def __init__(self, rabbitmq_client: RabbitMQClient, model_storage: DetectionService):
         self.rabbitmq_client = rabbitmq_client
         self.model_storage = model_storage
         self.consuming = False
