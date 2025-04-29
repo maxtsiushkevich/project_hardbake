@@ -7,6 +7,7 @@ from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
 
 from api.core.context import rabbitmq_client
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -21,6 +22,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Sniffer service')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 instrumentator.instrument(app, metric_namespace="sniffer_svc").expose(app)
 

@@ -7,8 +7,7 @@ from fastapi import FastAPI
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.management import router as management_router
 
-load_dotenv()
-
+from fastapi.middleware.cors import CORSMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -18,6 +17,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. ML Data Processor Service')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 instrumentator.instrument(app, metric_namespace="ml_data_processor_svc").expose(app)
 

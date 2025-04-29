@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.repository.redis_repository import RedisConnection
@@ -22,6 +23,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Packet processor service')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 instrumentator.instrument(app, metric_namespace="packet_processor_svc").expose(app)
 

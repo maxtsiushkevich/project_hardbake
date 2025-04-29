@@ -3,10 +3,22 @@ from fastapi import FastAPI
 from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
 from api.routers.interface import router as interface_router
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI(title='Project Hardbake. System Information service')
+
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 instrumentator.instrument(app, metric_namespace="system_info_svc").expose(app)
 

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.detect_router import router as detection_router
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
@@ -18,6 +19,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Threat Detection Service')
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 instrumentator.instrument(app, metric_namespace="threat_detection_svc").expose(app)
 
