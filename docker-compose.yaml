@@ -54,6 +54,33 @@ services:
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
 
+  ml-training-svc:
+    build: ./ml_training_svc
+    ports:
+      - "8004:8004"
+    depends_on:
+      - rabbitmq
+    environment:
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+
+  threat-detection-svc:
+    build: ./threat_detection_svc
+    ports:
+      - "8005:8005"
+    depends_on:
+      - rabbitmq
+    environment:
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
