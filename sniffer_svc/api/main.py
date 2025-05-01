@@ -20,7 +20,6 @@ async def lifespan(app: FastAPI):
     logger.info('Redis is cleared')
     yield
     await conn.close()
-    await rabbitmq_client.close_connection()
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Sniffer service')
