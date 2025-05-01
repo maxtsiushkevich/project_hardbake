@@ -4,6 +4,7 @@ from typing import List, Optional
 from scapy.compat import raw
 from scapy.layers.inet import IP
 
+from api.core.logger import logger
 from api.schemas.data_record import DataRecord
 from api.schemas.packet_data import PacketData
 
@@ -33,9 +34,8 @@ class PacketSeparator:
             elif ip_layer.src == self.dst_ip and ip_layer.dst == self.src_ip:
                 backward.append(pdata)
 
+        logger.debug(f"Separated {len(forward)} forward and {len(backward)} backward packets")
         return forward, backward
-
-
 
 
 class PacketStatistics:
@@ -70,13 +70,21 @@ class PacketStatistics:
             statistics.stdev(values) if len(values) > 1 else 0.0
         )
 
+
 class MLParser:
     @staticmethod
-    async def parsing_task(stream: List[PacketData]) -> DataRecord | None:
+    async def parsing_task(stream: List[PacketData]) -> Optional[DataRecord]:
+        if not stream:
+            logger.debug("Received empty stream for parsing")
+            return None
+
+        logger.debug(f"Parsing stream with {len(stream)} packets")
+
         separator = PacketSeparator(stream)
         forward, backward = separator.separate()
 
         if not forward and not backward:
+            logger.debug("No valid forward or backward packets found")
             return None
 
         fwd_sizes = PacketStatistics.lengths(forward)
@@ -86,19 +94,14 @@ class MLParser:
         fwd_timestamps = PacketStatistics.timestamps(forward)
         all_timestamps = PacketStatistics.timestamps(stream)
 
-        # Packet length stats
         min_packet_length = min(all_sizes) if all_sizes else 0
         max_packet_length = max(all_sizes) if all_sizes else 0
         packet_length_std = statistics.stdev(all_sizes) if len(all_sizes) > 1 else 0.0
         packet_length_variance = statistics.variance(all_sizes) if len(all_sizes) > 1 else 0.0
 
-        # PSH flag count
         psh_flag_count = sum(1 for p in stream if hasattr(p.packet, 'flags') and 'P' in str(p.packet.flags))
-
-        # Avg Bwd Segment Size
         avg_bwd_segment_size = statistics.mean(bwd_sizes) if bwd_sizes else 0.0
 
-        # Idle times (inter-arrival time)
         def idle_times(timestamps: List[int]) -> List[int]:
             if len(timestamps) < 2:
                 return [0]
@@ -109,20 +112,19 @@ class MLParser:
         idle_mean = statistics.mean(iat_all) / 1_000_000 if iat_all else 0.0
         idle_max = max(iat_all) // 1_000_000 if iat_all else 0
 
-        # Flow IAT Std and Max
         flow_IAT_std = statistics.stdev(iat_all) / 1_000_000 if len(iat_all) > 1 else 0.0
         flow_IAT_max = max(iat_all) // 1_000_000 if iat_all else 0
 
-        # Fwd IAT Std and Max
         fwd_iat = idle_times(fwd_timestamps)
         fwd_IAT_std = statistics.stdev(fwd_iat) / 1_000_000 if len(fwd_iat) > 1 else 0.0
         fwd_IAT_max = max(fwd_iat) // 1_000_000 if fwd_iat else 0
 
-        # Bwd Packet Length Stats
         bwd_min, bwd_max, bwd_mean, bwd_std = PacketStatistics.stats(bwd_sizes)
 
+        protocol = stream[0].packet[IP].proto if stream and stream[0].packet.haslayer(IP) else 0
+
         record = DataRecord(
-            protocol=stream[0].packet[IP].proto if stream and stream[0].packet.haslayer(IP) else 0,
+            protocol=protocol,
             bwd_packet_length_max=bwd_max,
             bwd_packet_length_min=bwd_min,
             bwd_packet_length_mean=bwd_mean,
@@ -142,6 +144,7 @@ class MLParser:
             idle_max=idle_max
         )
 
-        print(record)
+        logger.debug(f"Successfully parsed data record for stream. Protocol: {protocol}")
+        logger.debug(f"DataRecord: {record}")
 
         return record
