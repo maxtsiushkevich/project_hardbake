@@ -1,6 +1,8 @@
 import time
 from collections import defaultdict
 
+from api.core.logger import logger
+
 
 class UDPSessionTracker:
     def __init__(self, timeout: int = 10):
@@ -16,6 +18,7 @@ class UDPSessionTracker:
 
         self.udp_stream_last_seen[key] = current_time
         self.udp_stream_active[key] = True
+        logger.debug(f"Updated UDP stream {key} last seen at {current_time}")
 
     def check_expired_sessions(self) -> list:
         current_time = time.time()
@@ -30,4 +33,5 @@ class UDPSessionTracker:
                 del self.udp_stream_last_seen[key]
                 del self.udp_stream_active[key]
 
+        logger.debug(f"Expired UDP sessions count: {len(expired_sessions)}")
         return expired_sessions

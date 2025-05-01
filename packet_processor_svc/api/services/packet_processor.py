@@ -6,6 +6,7 @@ import pika
 from scapy.all import Packet
 from scapy.layers.inet import UDP, TCP
 
+from api.core.logger import logger
 from api.schemas.packet_data import PacketData
 from api.services.stream_key_extractor import StreamKeyExtractor
 from api.services.tcp_session_tracker import TCPSessionTracker
@@ -17,20 +18,23 @@ class PacketProcessor:
         self.proxy_mode = proxy_mode
         self.tcp_streams = defaultdict(list)
         self.udp_streams = defaultdict(list)
-
         self.channel = channel
-
         self.tcp_session_tracker = TCPSessionTracker()
         self.udp_session_tracker = UDPSessionTracker(timeout=udp_timeout)
+        logger.debug(f"PacketProcessor initialized (proxy_mode={proxy_mode}, udp_timeout={udp_timeout})")
 
     def process_packet(self, packet_data: PacketData):
         packet: Packet = packet_data.packet
-
+        logger.debug(f"Processing packet {packet}")
         key, alt_key = StreamKeyExtractor(packet).stream_key
+
         if not key or not alt_key:
+            logger.debug("Packet has no valid stream key")
             return None
 
+
         if packet.haslayer(TCP):
+            logger.debug(f"Processing TCP packet. Stream key: {key}")
             if key in self.tcp_streams:
                 self.tcp_streams[key].append(packet_data)
             elif alt_key in self.tcp_streams:
@@ -41,6 +45,7 @@ class PacketProcessor:
 
             flags = packet[TCP].flags
             is_end = self.tcp_session_tracker.update_tcp_state(key, flags)
+            logger.debug(f"TCP flags: {flags}, Session ended: {is_end}")
 
             if is_end and self.proxy_mode:
                 stream = self.tcp_streams.pop(key, [])
@@ -48,6 +53,7 @@ class PacketProcessor:
                     self.send_stream_rmq(stream)
 
         elif packet.haslayer(UDP):
+            logger.debug(f"Processing UDP packet. Stream key: {key}")
             if key in self.udp_streams:
                 self.udp_streams[key].append(packet_data)
             elif alt_key in self.udp_streams:
@@ -60,6 +66,7 @@ class PacketProcessor:
             expired_sessions = self.udp_session_tracker.check_expired_sessions()
 
             if self.proxy_mode and expired_sessions:
+                logger.debug(f"UDP expired sessions found: {expired_sessions}")
                 for expired_key in expired_sessions:
                     stream = self.udp_streams.pop(expired_key, [])
                     if stream:
@@ -67,6 +74,7 @@ class PacketProcessor:
 
     def send_stream_rmq(self, stream: List[PacketData]):
         try:
+            logger.debug(f"Sending stream to RMQ, packets count: {len(stream)}")
             byte_entries = [pkt_data.to_bytes() for pkt_data in stream]
             stream_rmq = pickle.dumps(byte_entries)
 
@@ -76,6 +84,7 @@ class PacketProcessor:
                 body=stream_rmq,
                 properties=pika.BasicProperties(delivery_mode=2)
             )
+            logger.info("Stream sent to RabbitMQ.")
         except Exception as e:
-            print(f"Error while sending message: {e}")
+            logger.debug(f"Error while sending message to RabbitMQ: {e}", exc_info=True)
             raise e

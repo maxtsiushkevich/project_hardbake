@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from typing import Dict, List, Optional
 
+from api.core.logger import logger
 from api.schemas.packet_data import PacketData
 
 
@@ -38,6 +39,7 @@ class StreamSummary(BaseModel):
 
     @classmethod
     def from_packets(cls, tcp_streams: Dict[str, List[PacketData]], udp_streams: Dict[str, List[PacketData]]):
+        logger.debug("Encoding StreamSummary from packet data")
         return cls(
             tcp_streams={
                 k: [base64.b64encode(pkt.to_bytes()).decode('utf-8') for pkt in v]
@@ -50,13 +52,14 @@ class StreamSummary(BaseModel):
         )
 
     def to_packets(self):
+        logger.debug("Decoding StreamSummary to PacketData objects")
         return {
             "tcp_streams": {
-                k: (PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v)
+                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
                 for k, v in self.tcp_streams.items()
             },
             "udp_streams": {
-                k: (PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v)
+                k: [PacketData.from_bytes(base64.b64decode(pkt)) for pkt in v]
                 for k, v in self.udp_streams.items()
             }
         }

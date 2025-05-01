@@ -1,7 +1,7 @@
 import asyncio
-import logging
 from typing import Optional
 
+from api.core.logger import logger
 from api.schemas.management import ConsumerStatusEnum
 from api.services.proxy_packet_processor import ProxyPacketProcessor
 
@@ -11,9 +11,12 @@ class ConsumerManager:
         self.proxy_packet_processor = proxy_packet_processor
         self.consumer_task: Optional[asyncio.Task] = None
         self.status = ConsumerStatusEnum.NOT_RUNNING
+        logger.debug("ConsumerManager initialized")
 
     async def start(self, udp_timeout: int):
+        logger.debug("Attempting to start consumer")
         if self.consumer_task and not self.consumer_task.done():
+            logger.debug("Consumer is already running")
             self.status = ConsumerStatusEnum.RUNNING
             return {"status": self.status}
 
@@ -25,13 +28,15 @@ class ConsumerManager:
                 )
             )
             self.status = ConsumerStatusEnum.RUNNING
+            logger.debug("Consumer started successfully")
             return {"status": self.status}
         except Exception as e:
-            logging.error(f"Failed to start consumer: {str(e)}")
+            logger.debug(f"Failed to start consumer: {str(e)}", exc_info=True)
             self.status = ConsumerStatusEnum.NOT_RUNNING
             raise Exception(f"Failed to start consumer: {str(e)}")
 
     async def stop(self):
+        logger.debug("Attempting to stop consumer")
         if not self.consumer_task or self.consumer_task.done():
             self.status = ConsumerStatusEnum.NOT_RUNNING
             return {"status": self.status}
@@ -40,19 +45,22 @@ class ConsumerManager:
             self.consumer_task.cancel()
             try:
                 await asyncio.wait_for(self.consumer_task, timeout=5)
+                logger.debug("Consumer stopped gracefully")
             except asyncio.CancelledError:
-                pass
+                logger.debug("Consumer task was cancelled")
             except asyncio.TimeoutError:
-                logging.warning("Consumer task did not cancel gracefully within timeout")
+                logger.debug("Consumer task did not cancel gracefully within timeout")
 
             self.status = ConsumerStatusEnum.STOPPED
             return {"status": self.status}
         except Exception as e:
-            logging.error(f"Failed to stop consumer: {str(e)}")
+            logger.debug(f"Failed to stop consumer: {str(e)}", exc_info=True)
             self.status = ConsumerStatusEnum.NOT_RUNNING
             raise Exception(f"Failed to stop consumer: {str(e)}")
         finally:
             self.consumer_task = None
+            logger.debug("Consumer task reference cleared")
 
     def get_status(self):
+        logger.debug(f"Returning consumer status: {self.status}")
         return self.status
