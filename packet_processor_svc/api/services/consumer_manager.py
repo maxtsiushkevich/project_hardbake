@@ -49,7 +49,7 @@ class ConsumerManager:
             except asyncio.CancelledError:
                 logger.debug("Consumer task was cancelled")
             except asyncio.TimeoutError:
-                logger.debug("Consumer task did not cancel gracefully within timeout")
+                logger.debug("Consumer task did not cancel gracefully within timeout", exc_info=True)
 
             self.status = ConsumerStatusEnum.STOPPED
             return {"status": self.status}
