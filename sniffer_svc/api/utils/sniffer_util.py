@@ -7,6 +7,7 @@ from scapy.sendrecv import AsyncSniffer
 from scapy.utils import PcapNgWriter
 
 from api.core.context import sniffers, rabbitmq_client
+from api.core.logger import logger
 from api.exceptions.exceptions import RabbitMQError, SniffNotFoundError
 from api.schemas.packet_data import PacketData
 
@@ -19,9 +20,10 @@ class SnifferUtil:
         try:
             if writer:
                 writer.write(packet)
+                logger.debug("Packet written to pcap file")
 
             packet_data = PacketData(packet)
-            print(packet.summary())
+            logger.debug(f"Captured packet: {packet.summary()}")
             packet_data = packet_data.to_bytes()
             data = pickle.dumps(packet_data)
 
@@ -31,11 +33,10 @@ class SnifferUtil:
                 body=data,
                 properties=pika.BasicProperties(delivery_mode=2)
             )
-
+            logger.debug("Packet published to RabbitMQ")
         except Exception as e:
-            print(f"{e}")
             self.is_crashed = True
-            print("packet_operator")
+            logger.error(f"Error in packet_operator: {e}", exc_info=True)
             # raise e
 
     def _is_crashed(self, pkt):
@@ -49,7 +50,9 @@ class SnifferUtil:
             if write_in_file:
                 pcap_dir = "pcap"
                 os.makedirs(pcap_dir, exist_ok=True)
-                writer = PcapNgWriter(os.path.join(pcap_dir, f"{iface}_{sniff_id}.pcapng"))
+                file_path = os.path.join(pcap_dir, f"{iface}_{sniff_id}.pcapng")
+                writer = PcapNgWriter(file_path)
+                logger.info(f"Writing packets to file: {file_path}")
 
             sniffer = AsyncSniffer(
                 iface=iface,
@@ -60,10 +63,14 @@ class SnifferUtil:
 
             sniffer.start()
             sniffers[sniff_id] = sniffer
+            logger.info(f"Sniffer started and registered in context with sniff_id={sniff_id}")
 
         except RabbitMQError as e:
-            print("start_sniffing")
+            logger.error(f"RabbitMQ error during start_sniffing for sniff_id={sniff_id}: {e}", exc_info=True)
             raise e
+        except Exception as e:
+            logger.error(f"Unexpected error during start_sniffing: {e}", exc_info=True)
+            raise
 
     async def stop_sniffing(self, sniff_id: UUID):
         sniffer = sniffers.get(sniff_id)
@@ -76,4 +83,6 @@ class SnifferUtil:
             pass
         if sniffer.running:
             sniffer.stop()
+
         del sniffers[sniff_id]
+        logger.debug(f"Sniffer removed from context for sniff_id={sniff_id}")

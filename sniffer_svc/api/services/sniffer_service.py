@@ -1,4 +1,6 @@
 from uuid import UUID
+
+from api.core.logger import logger
 from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError, RabbitMQError
 from api.schemas.sniffer import SniffStatus, StartSniffDetails
 from api.repository.redis_repository import RedisRepository
@@ -13,6 +15,7 @@ class SnifferService:
         self.sniffer_util: SnifferUtil = SnifferUtil()
 
     async def start(self, iface: str, sniff_id, time, filters: str | None = None, write_in_file: bool = False):
+        logger.info(f"Attempting to start sniffing: iface={iface}, sniff_id={sniff_id}, filters={filters}")
 
         if await self.redis.is_sniffer_running(iface):
             raise SniffAlreadyRunningError
@@ -23,11 +26,12 @@ class SnifferService:
             await self.sniffer_util.start_sniffing(sniff_id=sniff_id, iface=iface, filters=filters,
                                                    write_in_file=write_in_file)
         except RabbitMQError as e:
-            print("start")
+            logger.critical(f"RabbitMQ error during start sniffing for sniff_id={sniff_id}: {e}")
             await self.redis.update_sniff(sniff_id, SniffStatus.Crashed)
             raise e
 
     async def stop(self, sniff_id: UUID):
+        logger.info(f"Attempting to stop sniffing for sniff_id={sniff_id}")
         try:
             await self.sniffer_util.stop_sniffing(sniff_id=sniff_id)
         except SniffNotFoundError as e:

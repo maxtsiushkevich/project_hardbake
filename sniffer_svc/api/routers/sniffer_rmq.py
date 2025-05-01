@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from uuid import UUID, uuid4
 from datetime import datetime
 
+from api.core.logger import logger
 from api.exceptions.exceptions import SniffNotFoundError, SniffAlreadyRunningError, RabbitMQError
 from api.schemas.sniffer import SniffListResponse, SniffDetails, SniffStatus, SniffFilter, StartSniffDetails
 from api.repository.redis_repository import RedisConnection, RedisRepository
@@ -21,21 +22,27 @@ router = APIRouter(prefix="/sniffer-rmq", tags=["Sniffer"])
              }
              )
 async def start_sniff(iface: str, write_in_file: bool = False, filter_params: SniffFilter | None = None):
+    logger.info(f"Received request to start sniffing on interface '{iface}' with write_in_file={write_in_file}")
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         bpf_filter = filter_params.to_bpf() if filter_params else None
+        if bpf_filter:
+            logger.debug(f"BPF filter applied: {bpf_filter}")
         try:
             sniff_id = uuid4()
 
             time = datetime.now()
             await sniffer_service.start(iface, sniff_id, time, bpf_filter, write_in_file)
+            logger.info(f"Started sniffing session {sniff_id} on interface {iface}")
             return StartSniffDetails(sniff_id=sniff_id, start_at=time, interface=iface)
         except SniffAlreadyRunningError:
+            logger.warning(f"Sniffer already running on interface {iface}")
             raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                                 detail=f"Sniff on interface {iface} already running")
         except RabbitMQError as e:
+            logger.error(f"RabbitMQ error: {str(e)}", exc_info=True)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
 
@@ -47,13 +54,16 @@ async def start_sniff(iface: str, write_in_file: bool = False, filter_params: Sn
               }
               )
 async def stop_sniff(sniff_id: UUID):
+    logger.info(f"Received request to stop sniffing session {sniff_id}")
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         try:
             sniff = await sniffer_service.stop(sniff_id)
+            logger.info(f"Stopped sniffing session {sniff_id}")
         except SniffNotFoundError:
+            logger.warning(f"Sniffing session {sniff_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sniff {sniff_id} not found")
 
     return SniffDetails(**sniff.dict())
@@ -67,14 +77,17 @@ async def stop_sniff(sniff_id: UUID):
             }
             )
 async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = None):
+    logger.info(f"Fetching all sniffs (start_pos={start_pos}, quantity={quantity})")
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         results = await sniffer_service.get_all(start_pos, quantity)
         if not results:
+            logger.info("No sniffing sessions found")
             raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
+    logger.info(f"Fetched {len(results)} sniffing sessions")
     return SniffListResponse(sniffs=results, total=len(results))
 
 
@@ -86,14 +99,17 @@ async def get_all_sniffs(start_pos: int | None = None, quantity: int | None = No
             }
             )
 async def get_sniff_details(task_id: UUID):
+    logger.info(f"Fetching details for sniffing session {task_id}")
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         result = await sniffer_service.get(task_id)
         if not result:
+            logger.warning(f"Sniffing session {task_id} not found")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Sniff {task_id} not found")
 
+    logger.info(f"Fetched details for session {task_id}")
     return SniffDetails(**result.dict())
 
 
@@ -105,12 +121,15 @@ async def get_sniff_details(task_id: UUID):
             }
             )
 async def get_sniffs_by_status(target_status: SniffStatus):
+    logger.info(f"Fetching sniffing sessions with status: {target_status}")
     async with RedisConnection() as connection:
         redis = RedisRepository(connection.redis)
         sniffer_service = SnifferService(redis)
 
         results = await sniffer_service.get_by_status(target_status)
         if not results:
+            logger.info(f"No sniffing sessions found with status {target_status}")
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
+    logger.info(f"Found {len(results)} sessions with status {target_status}")
     return SniffListResponse(sniffs=results, total=len(results))

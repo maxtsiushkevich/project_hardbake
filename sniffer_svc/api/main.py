@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from api.core.context import rabbitmq_client
 from fastapi.middleware.cors import CORSMiddleware
+from api.core.logger import logger, LOGGING_CONFIG
 
 load_dotenv()
 
@@ -16,6 +17,7 @@ load_dotenv()
 async def lifespan(app: FastAPI):
     conn = RedisConnection().connection
     await conn.flushdb()
+    logger.info('Redis is cleared')
     yield
     await conn.close()
     await rabbitmq_client.close_connection()
@@ -38,4 +40,4 @@ app.mount("/metrics", metrics)
 app.include_router(sniffer_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    uvicorn.run(app, host='0.0.0.0', port=8000, log_config=LOGGING_CONFIG)
