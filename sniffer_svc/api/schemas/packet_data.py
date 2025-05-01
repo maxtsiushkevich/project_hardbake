@@ -31,7 +31,7 @@ class PacketData:
             logger.debug(f"Serialized packet: timestamp={self.timestamp}, length={len(packet_bytes)}")
             return serialized
         except Exception as e:
-            logger.error(f"Error serializing packet: {e}", exc_info=True)
+            logger.debug(f"Error serializing packet: {e}", exc_info=True)
             raise
 
     @staticmethod
@@ -54,5 +54,5 @@ class PacketData:
             logger.debug(f"Deserialized packet: timestamp={timestamp}, length={pkt_length}")
             return PacketData(packet=packet, timestamp=timestamp)
         except Exception as e:
-            logger.error(f"Error deserializing packet: {e}", exc_info=True)
+            logger.debug(f"Error deserializing packet: {e}", exc_info=True)
             raise
