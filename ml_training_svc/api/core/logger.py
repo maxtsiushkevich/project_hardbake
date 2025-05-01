@@ -20,7 +20,6 @@ class ColoredFormatter(logging.Formatter):
         return super().format(record)
 
 
-
 handler = logging.StreamHandler()
 handler.setFormatter(ColoredFormatter(
     '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -31,7 +30,6 @@ logger = logging.getLogger('sniffer_svc')
 logger.setLevel(logging.DEBUG)
 
 logger.addHandler(handler)
-
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -75,10 +73,3 @@ LOGGING_CONFIG = {
         },
     }
 }
-
-
-# logger.debug('debug message')
-# logger.info('info message')
-# logger.warning('warning message')
-# logger.error('error message')
-# logger.critical('critical message')

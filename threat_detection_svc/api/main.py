@@ -4,6 +4,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from api.core.logger import LOGGING_CONFIG
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.detect_router import router as detection_router
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,4 +36,4 @@ app.mount("/metrics", metrics)
 app.include_router(detection_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8005)
+    uvicorn.run(app, host='0.0.0.0', port=8005, log_config=LOGGING_CONFIG)

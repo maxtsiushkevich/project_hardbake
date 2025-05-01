@@ -4,10 +4,12 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 
+from api.core.logger import LOGGING_CONFIG
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.management import router as management_router
 
 from fastapi.middleware.cors import CORSMiddleware
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,4 +35,4 @@ app.mount("/metrics", metrics)
 app.include_router(management_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8003)
+    uvicorn.run(app, host='0.0.0.0', port=8003, log_config=LOGGING_CONFIG)

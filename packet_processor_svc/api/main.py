@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.core.logger import LOGGING_CONFIG
 from api.monitoring.prometheus import metrics, instrumentator
 from api.repository.redis_repository import RedisConnection
 from api.routers.management_router import router as management_router
@@ -39,4 +40,4 @@ app.include_router(packet_router)
 app.include_router(management_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8002)
+    uvicorn.run(app, host='0.0.0.0', port=8002, log_config=LOGGING_CONFIG)
