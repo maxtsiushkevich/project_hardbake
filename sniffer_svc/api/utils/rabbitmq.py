@@ -101,7 +101,7 @@ class RabbitMQClient:
     def _on_connection_open_error(self, _unused_connection, err):
         logger.error(f"RabbitMQ connection open failed: {err}", exc_info=True)
         self._connect_event.set()
-        raise RabbitMQError(f"Connection open error: {err}")
+        # raise RabbitMQError(f"Connection open error: {err}")
 
     def _on_connection_closed(self, _unused_connection, reason):
         logger.warning(f"RabbitMQ connection closed: {reason}")
@@ -111,7 +111,10 @@ class RabbitMQClient:
 
     async def open_channel(self, sniff_id: UUID):
         """Open a dedicated channel for specific sniff_id"""
-        await self.ensure_connection()
+        try:
+            await self.ensure_connection()
+        except RabbitMQError as e:
+            raise RabbitMQError("RabbitMQ connection is not available")
 
         async with asyncio.Lock():
             try:
