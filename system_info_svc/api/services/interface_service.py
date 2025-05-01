@@ -1,20 +1,22 @@
 import psutil
 import socket
-
 from api.exceptions.exceptions import InterfaceNotFoundError
+from api.core.logger import logger  # Assuming this is your logging setup
 
 
 class NetworkInterface:
-
     def __init__(self, name):
         self.name = name
+        logger.debug(f"Initializing NetworkInterface for: {name}")
         self._info = self._get_info()
         self._stats = self._get_stats()
 
     def _get_info(self):
+        logger.debug(f"Getting interface info for: {self.name}")
         if_info = psutil.net_if_addrs().get(self.name)
 
         if not if_info:
+            logger.debug(f"Interface {self.name} not found in address list")
             raise InterfaceNotFoundError
 
         result = {}
@@ -27,15 +29,18 @@ class NetworkInterface:
             elif addr.family == psutil.AF_LINK:
                 result['mac'] = addr.address
 
+        logger.debug(f"Interface {self.name} info: {result}")
         return result
 
     def _get_stats(self):
+        logger.debug(f"Getting interface stats for: {self.name}")
         stats = psutil.net_io_counters(pernic=True).get(self.name)
 
         if not stats:
+            logger.debug(f"Interface {self.name} not found in I/O counters")
             raise InterfaceNotFoundError
 
-        return {
+        result = {
             'bytes_sent': stats.bytes_sent,
             'bytes_received': stats.bytes_recv,
             'packets_sent': stats.packets_sent,
@@ -46,6 +51,9 @@ class NetworkInterface:
             'dropped_out': stats.dropout,
         }
 
+        logger.debug(f"Interface {self.name} stats: {result}")
+        return result
+
     @property
     def info(self):
         return self._info
@@ -55,11 +63,13 @@ class NetworkInterface:
         return self._stats
 
     def to_dict(self):
-        return {
+        data = {
             'name': self.name,
             'info': self._info,
             'stats': self._stats
         }
+        logger.debug(f"Converting interface {self.name} to dict: {data}")
+        return data
 
     @info.setter
     def info(self, value):
@@ -73,13 +83,22 @@ class NetworkInterface:
 class NetworkInterfacesService:
     @staticmethod
     def get_interfaces() -> list[NetworkInterface]:
-        return [NetworkInterface(name) for name in psutil.net_if_addrs().keys()]
+        logger.debug("Fetching list of NetworkInterface objects")
+        interfaces = [NetworkInterface(name) for name in psutil.net_if_addrs().keys()]
+        logger.debug(f"Found interfaces: {[iface.name for iface in interfaces]}")
+        return interfaces
 
     @staticmethod
     def get_interfaces_json() -> list[dict[str, str]]:
-        return [NetworkInterface(name).to_dict() for name in psutil.net_if_addrs().keys()]
+        logger.debug("Fetching list of network interfaces as JSON")
+        interfaces = [NetworkInterface(name).to_dict() for name in psutil.net_if_addrs().keys()]
+        logger.debug(f"Interfaces JSON: {interfaces}")
+        return interfaces
 
     @staticmethod
     def get_interfaces_name_list() -> list[str]:
+        logger.debug("Fetching interface name list")
         interfaces = psutil.net_if_addrs()
-        return list(interfaces.keys())
+        names = list(interfaces.keys())
+        logger.debug(f"Interface names: {names}")
+        return names
