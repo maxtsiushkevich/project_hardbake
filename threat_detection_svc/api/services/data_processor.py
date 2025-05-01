@@ -1,5 +1,6 @@
 import asyncio
 
+from api.core.logger import logger
 from api.exceptions.exceptions import RabbitMQError
 from api.schemas.data_record import DataRecord
 from api.schemas.detect import DetectionStatusEnum
@@ -20,6 +21,7 @@ class DataProcessor:
 
     async def start(self):
         if self.consuming:
+            logger.debug("DataProcessor already running")
             return
 
         try:
@@ -32,8 +34,10 @@ class DataProcessor:
             )
             self.consuming = True
             self.status = DetectionStatusEnum.RUNNING
+            logger.debug("DataProcessor started and consuming messages")
         except RabbitMQError as e:
             self.status = DetectionStatusEnum.FAILED
+            logger.debug(f"Failed to start DataProcessor due to RabbitMQError: {e}", exc_info=True)
             raise e
 
     def process_message_wrapper(self, channel, method, properties, body):
@@ -42,15 +46,18 @@ class DataProcessor:
     async def process_message(self, channel, method, properties, body):
         try:
             data_record = DataRecord.model_validate_json(body)
-            print(data_record)
+            logger.debug(f"Processing data record: {data_record}")
 
             await self.model_storage.add_data(data_record)
+            logger.debug("Data record processed and added to model storage")
 
         except RabbitMQError as e:
             self.status = DetectionStatusEnum.FAILED
+            logger.debug(f"RabbitMQError while processing message: {e}", exc_info=True)
             raise e
         except Exception as e:
             self.status = DetectionStatusEnum.FAILED
+            logger.debug(f"Unexpected error while processing message: {e}", exc_info=True)
             raise e
 
     async def stop(self):
@@ -62,12 +69,16 @@ class DataProcessor:
                 print("Stopped consuming")
                 self.channel.close()
                 self.status = DetectionStatusEnum.STOPPED
+                logger.debug("DataProcessor stopped successfully")
             except RabbitMQError as e:
                 self.status = DetectionStatusEnum.FAILED
+                logger.debug(f"Failed to stop DataProcessor due to RabbitMQError: {e}", exc_info=True)
                 raise e
 
         await self.model_storage.process_batch()
         self.consuming = False
+        logger.debug("Remaining batch data processed after stopping")
 
     def get_status(self):
+        logger.debug(f"Returning DataProcessor status: {self.status}")
         return self.status
