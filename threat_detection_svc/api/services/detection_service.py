@@ -65,7 +65,9 @@ class DetectionService:
             if_anomalies = self.isolation_forest.predict(features)
             svm_anomalies = self.one_class_svm.predict(features)
 
-            combined_anomalies = (if_anomalies == -1) | (svm_anomalies == -1)
+            combined_anomalies = (if_anomalies == -1) & (svm_anomalies == -1)
+
+            logger.debug(f"Anomalies: {combined_anomalies}")
 
             await self._handle_anomalies(self._current_batch, combined_anomalies)
 
@@ -117,8 +119,8 @@ class DetectionService:
                             body=record.model_dump_json(),
                             properties=pika.BasicProperties(delivery_mode=2)
                         )
-                        logger.debug(f"Anomaly published for flow: {record.flow_id}")
+                        logger.debug(f"Anomaly published for flow")
                     except Exception as e:
-                        logger.debug(f"Failed to send anomaly notification for {record.flow_id}: {e}", exc_info=e)
+                        logger.debug(f"Failed to send anomaly notification for flow: {e}", exc_info=e)
         except Exception as e:
             logger.debug(f"Error handling anomalies: {e}", exc_info=e)
