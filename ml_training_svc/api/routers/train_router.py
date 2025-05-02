@@ -12,7 +12,6 @@ from api.schemas.ml import ModelHyperparameters, TrainingStatus, ModelSettings, 
     UploadStatus
 from api.services.ml_data_processor import MLDataProcessor
 from api.services.model_storage import ModelStorage
-from api.utils.rabbitmq import RabbitMQClient
 
 from fastapi.responses import FileResponse
 from pathlib import Path
@@ -46,6 +45,7 @@ async def start_consuming():
         return StatusResponse(status=Status.STARTED)
     except Exception as e:
         logger.error(f"Failed to start consuming: {e}", exc_info=True)
+        model_storage.training_status = TrainingStatus.ERROR
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)
@@ -63,10 +63,12 @@ async def stop_consuming():
     logger.info("Received request to stop consuming")
     try:
         await ml_processor.stop_consuming()
+        model_storage.training_status = TrainingStatus.STOPPED
         logger.info("Stopped consuming messages")
         return StatusResponse(status=Status.STOPPED)
     except Exception as e:
         logger.error(f"Failed to stop consuming: {e}", exc_info=True)
+        model_storage.training_status = TrainingStatus.ERROR
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e)

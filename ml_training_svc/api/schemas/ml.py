@@ -75,6 +75,7 @@ class TrainingStatus(str, Enum):
     TRAINING = "Training"
     READY = "Ready"
     ERROR = "Error"
+    STOPPED = "Stopped"
 
 
 class ModelSettings(BaseModel):

@@ -20,6 +20,12 @@ class MLDataProcessor:
 
         logger.debug(f"Starting to consume from queue: {self.queue_name}")
         try:
+            if self.channel is not None:
+                try:
+                    await self.channel.close()
+                except Exception as e:
+                    logger.debug(f"Error closing old channel: {e}", exc_info=True)
+
             self.consuming = True
             self.channel = await self.rabbitmq_client.get_channel()
 
@@ -32,7 +38,17 @@ class MLDataProcessor:
             logger.debug("Consumer started successfully")
         except Exception as e:
             logger.debug(f"Failed to start consuming: {e}", exc_info=True)
-            self.consuming = False
+            self._cleanup()
+            raise
+
+    def on_channel_closed(self, channel, reason):
+        logger.debug(f"Channel was closed: {reason}")
+        self._cleanup()
+
+    def _cleanup(self):
+        self.consuming = False
+        self.consumer_tag = None
+        self.channel = None
 
     def process_message(self, channel, method, properties, body):
         try:
@@ -45,15 +61,18 @@ class MLDataProcessor:
 
     async def stop_consuming(self):
         logger.debug("Stopping message consuming received")
-        if self.consuming and self.consumer_tag:
+        if self.consuming and self.consumer_tag and self.channel:
             try:
-                channel = await self.rabbitmq_client.get_channel()
-                channel.basic_cancel(self.consumer_tag)
+                self.channel.basic_cancel(self.consumer_tag)
                 logger.debug("Consumer stopped successfully")
-                self.channel.close()
             except Exception as e:
                 logger.debug(f"Failed to stop consumer: {e}", exc_info=True)
-        else:
-            logger.debug("No active consumer was found")
 
-        self.consuming = False
+        self._cleanup()
+        if self.channel:
+            try:
+                await self.channel.close()
+            except Exception as e:
+                logger.debug(f"Error closing channel: {e}", exc_info=True)
+            finally:
+                self.channel = None
