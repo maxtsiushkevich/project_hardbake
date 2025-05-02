@@ -1,6 +1,7 @@
 from enum import Enum
 
-from pydantic import Field, BaseModel
+from pydantic import BaseModel, Field, field_validator
+from typing import Dict
 
 
 class ModelHyperparameters(BaseModel):
@@ -20,6 +21,52 @@ class ModelHyperparameters(BaseModel):
         },
         description="Hyperparameters for OneClassSVM"
     )
+
+    @field_validator('isolation_forest')
+    @classmethod
+    def validate_isolation_forest(cls, v: Dict) -> Dict:
+        if not isinstance(v, dict):
+            raise ValueError("isolation_forest must be a dictionary")
+
+        # Validate n_estimators
+        n_estimators = v.get("n_estimators", 100)
+        if not isinstance(n_estimators, int) or n_estimators <= 0:
+            raise ValueError("n_estimators must be a positive integer")
+
+        # Validate contamination
+        contamination = v.get("contamination", 0.15)
+        if not isinstance(contamination, (int, float)) or not (0 < contamination <= 0.5):
+            raise ValueError("contamination must be a float between 0 and 0.5")
+
+        # Validate n_jobs
+        n_jobs = v.get("n_jobs", -1)
+        if not isinstance(n_jobs, int) or n_jobs < -1 or n_jobs == 0:
+            raise ValueError("n_jobs must be -1, positive integer, or None")
+
+        return v
+
+    @field_validator('one_class_svm')
+    @classmethod
+    def validate_one_class_svm(cls, v: Dict) -> Dict:
+        if not isinstance(v, dict):
+            raise ValueError("one_class_svm must be a dictionary")
+
+        # Validate nu
+        nu = v.get("nu", 0.05)
+        if not isinstance(nu, (int, float)) or not (0 < nu <= 1):
+            raise ValueError("nu must be a float between 0 and 1")
+
+        # Validate kernel
+        kernel = v.get("kernel", "rbf")
+        if kernel not in ["linear", "poly", "rbf", "sigmoid", "precomputed"]:
+            raise ValueError("kernel must be one of: linear, poly, rbf, sigmoid, precomputed")
+
+        # Validate gamma
+        gamma = v.get("gamma", "auto")
+        if gamma != "auto" and gamma != "scale" and not isinstance(gamma, (int, float)):
+            raise ValueError("gamma must be 'auto', 'scale' or a positive float")
+
+        return v
 
 
 class TrainingStatus(str, Enum):
