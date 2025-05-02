@@ -32,7 +32,7 @@ class ConsumerManager:
             return {"status": self.status}
         except Exception as e:
             logger.debug(f"Failed to start consumer: {str(e)}", exc_info=True)
-            self.status = ConsumerStatusEnum.NOT_RUNNING
+            self.status = ConsumerStatusEnum.ERROR
             raise Exception(f"Failed to start consumer: {str(e)}")
 
     async def stop(self):
@@ -55,7 +55,7 @@ class ConsumerManager:
             return {"status": self.status}
         except Exception as e:
             logger.debug(f"Failed to stop consumer: {str(e)}", exc_info=True)
-            self.status = ConsumerStatusEnum.NOT_RUNNING
+            self.status = ConsumerStatusEnum.ERROR
             raise Exception(f"Failed to stop consumer: {str(e)}")
         finally:
             self.consumer_task = None

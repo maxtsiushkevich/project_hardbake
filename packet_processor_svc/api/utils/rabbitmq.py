@@ -133,4 +133,3 @@ class RabbitMQClient:
 
         logger.info("New RabbitMQ channel created")
         return channel
-

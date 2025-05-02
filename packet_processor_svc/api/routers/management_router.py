@@ -28,7 +28,7 @@ async def start_consumer_endpoint(udp_timeout: int = 10):
             logger.info("Consumer started successfully")
             return JSONResponse(content=StartStopResponse(status=response["status"]).model_dump(),
                                 status_code=status.HTTP_200_OK)
-        if response["status"] == ConsumerStatusEnum.NOT_RUNNING:
+        if response["status"] == ConsumerStatusEnum.ERROR:
             logger.warning("Consumer could not start, RabbitMQ not available")
             return JSONResponse(content=StartStopResponse(status=response["status"]).model_dump(),
                                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
