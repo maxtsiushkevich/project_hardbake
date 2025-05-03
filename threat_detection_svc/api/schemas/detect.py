@@ -7,7 +7,7 @@ class DetectionStatusEnum(str, Enum):
     NOT_RUNNING = "Not running"
     RUNNING = "Running"
     STOPPED = "Stopped"
-    FAILED = "Failed"
+    ERROR = "Error"
 
 
 class StartStopResponse(BaseModel):

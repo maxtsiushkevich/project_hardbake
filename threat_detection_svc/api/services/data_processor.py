@@ -24,6 +24,7 @@ class DataProcessor:
             logger.debug("DataProcessor already running")
             return
 
+        logger.debug(f"Starting to consume from queue: {self.queue_name}")
         try:
             self.channel = await self.rabbitmq_client.get_channel()
 
@@ -36,7 +37,7 @@ class DataProcessor:
             self.status = DetectionStatusEnum.RUNNING
             logger.debug("DataProcessor started and consuming messages")
         except RabbitMQError as e:
-            self.status = DetectionStatusEnum.FAILED
+            self.status = DetectionStatusEnum.ERROR
             logger.debug(f"Failed to start DataProcessor due to RabbitMQError: {e}", exc_info=True)
             raise e
 
@@ -52,33 +53,46 @@ class DataProcessor:
             logger.debug("Data record processed and added to model storage")
 
         except RabbitMQError as e:
-            self.status = DetectionStatusEnum.FAILED
+            self.status = DetectionStatusEnum.ERROR
             logger.debug(f"RabbitMQError while processing message: {e}", exc_info=True)
             raise e
         except Exception as e:
-            self.status = DetectionStatusEnum.FAILED
+            self.status = DetectionStatusEnum.ERROR
             logger.debug(f"Unexpected error while processing message: {e}", exc_info=True)
             raise e
 
     async def stop(self):
         if self.consuming and self.consumer_tag:
-            channel = await self.rabbitmq_client.get_channel()
-
             try:
-                channel.basic_cancel(self.consumer_tag)
+                self.channel.basic_cancel(self.consumer_tag)
                 print("Stopped consuming")
-                self.channel.close()
                 self.status = DetectionStatusEnum.STOPPED
                 logger.debug("DataProcessor stopped successfully")
             except RabbitMQError as e:
-                self.status = DetectionStatusEnum.FAILED
+                self.status = DetectionStatusEnum.ERROR
                 logger.debug(f"Failed to stop DataProcessor due to RabbitMQError: {e}", exc_info=True)
                 raise e
 
+        self._cleanup()
         await self.model_storage.process_batch()
         self.consuming = False
         logger.debug("Remaining batch data processed after stopping")
 
+    def _cleanup(self):
+        self.consuming = False
+        self.consumer_tag = None
+        self.channel = None
+
     def get_status(self):
-        logger.debug(f"Returning DataProcessor status: {self.status}")
+        try:
+            if not self.rabbitmq_client._connection or self.rabbitmq_client._connection.is_closed:
+                if self.status == DetectionStatusEnum.RUNNING:
+                    self._cleanup()
+                    self.status = DetectionStatusEnum.ERROR
+        except Exception as e:
+            logger.error(f"Error checking RabbitMQ connection state: {str(e)}")
+            self._cleanup()
+            self.status = DetectionStatusEnum.ERROR
+        logger.debug(f"Consumer status queried: {self.status}")
         return self.status
+
