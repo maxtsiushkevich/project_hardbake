@@ -7,6 +7,7 @@ class ConsumerStatusEnum(str, Enum):
     NOT_RUNNING = "Not running"
     RUNNING = "Running"
     STOPPED = "Stopped"
+    ERROR = "Error"
 
 
 class StartStopResponse(BaseModel):

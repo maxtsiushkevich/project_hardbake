@@ -5,6 +5,7 @@ from typing import Optional
 from api.core.logger import logger
 from api.schemas.management import ConsumerStatusEnum
 from api.services.stream_processor import StreamProcessor
+from api.utils.rabbitmq import RabbitMQClient
 
 
 class ConsumerManager:
@@ -12,6 +13,8 @@ class ConsumerManager:
         self.proxy_packet_processor = proxy_packet_processor
         self.consumer_task: Optional[asyncio.Task] = None
         self.status = ConsumerStatusEnum.NOT_RUNNING
+        self.rabbitmq_client = RabbitMQClient()
+        logger.debug("ConsumerManager initialized")
 
     async def start(self):
         if self.consumer_task and not self.consumer_task.done():
@@ -20,6 +23,14 @@ class ConsumerManager:
             return {"status": self.status}
 
         try:
+
+            try:
+                await self.rabbitmq_client.get_channel()
+            except ConnectionError as e:
+                logger.error(f"RabbitMQ connection error: {str(e)}")
+                self.status = ConsumerStatusEnum.ERROR
+                raise ConnectionError(f"RabbitMQ connection error: {str(e)}")
+
             logger.debug("Starting consumer")
             self.consumer_task = asyncio.create_task(
                 self.proxy_packet_processor.start_consuming(
@@ -29,6 +40,10 @@ class ConsumerManager:
             self.status = ConsumerStatusEnum.RUNNING
             logger.debug("Consumer started successfully.")
             return {"status": self.status}
+        except ConnectionError as e:
+            logger.error(f"RabbitMQ connection error: {str(e)}")
+            self.status = ConsumerStatusEnum.ERROR
+            raise
         except Exception as e:
             logger.debug(f"Failed to start consumer: {str(e)}", exc_info=True)
             self.status = ConsumerStatusEnum.NOT_RUNNING
@@ -61,5 +76,13 @@ class ConsumerManager:
             self.consumer_task = None
 
     def get_status(self):
+        try:
+            if not self.rabbitmq_client._connection or self.rabbitmq_client._connection.is_closed:
+                if self.status == ConsumerStatusEnum.RUNNING:
+                    self.consumer_task = None
+                    self.status = ConsumerStatusEnum.ERROR
+        except Exception as e:
+            logger.error(f"Error checking RabbitMQ connection state: {str(e)}")
+            self.status = ConsumerStatusEnum.ERROR
         logger.debug(f"Consumer status queried: {self.status}")
         return self.status
