@@ -78,6 +78,15 @@ class TrainingStatus(str, Enum):
     STOPPED = "Stopped"
 
 
+class ConsumerStatusEnum(str, Enum):
+    NOT_RUNNING = "Not running"
+    RUNNING = "Running"
+    STOPPED = "Stopped"
+    ERROR = "Error"
+
+class ConsumerStatusResponse(BaseModel):
+    status: ConsumerStatusEnum
+
 class ModelSettings(BaseModel):
     hyperparameters: ModelHyperparameters
     min_samples_for_training: int
