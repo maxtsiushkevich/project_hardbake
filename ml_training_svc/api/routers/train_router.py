@@ -9,7 +9,7 @@ from api.exceptions.exceptions import NotEnoughTrainingRecords, ModelsNotReady, 
     UpdateMinSamplesException
 from api.schemas.ml import ModelHyperparameters, TrainingStatus, ModelSettings, TrainingInfoResponse, \
     StatusResponse, Status, UpdateHyperparametersResponse, UpdateStatus, UpdateMinSamples, UploadStatusResponse, \
-    UploadStatus
+    UploadStatus, ConsumerStatusResponse
 from api.services.ml_data_processor import MLDataProcessor
 from api.services.model_storage import ModelStorage
 
@@ -289,4 +289,24 @@ async def get_current_settings():
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get current settings: {str(e)}"
+        )
+
+@router.get("/consumer_status",
+            response_model=ConsumerStatusResponse,
+            responses={
+                200: {"description": "OK"},
+                500: {"description": "Internal server error"},
+            }
+            )
+async def get_consumer_status():
+    logger.info("Received request: get current consumer status")
+    try:
+        consumer_status = ml_processor.get_consumer_status()
+        logger.debug(f"Current consumer status: {consumer_status}")
+        return ConsumerStatusResponse(status=consumer_status)
+    except Exception as e:
+        logger.error(f"Failed to get current consumer status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get current consumer status: {str(e)}"
         )

@@ -77,7 +77,8 @@ class RabbitMQClient:
     def _on_connection_open_error(self, _unused_connection, err):
         logger.error(f"RabbitMQ connection open failed: {err}", exc_info=True)
         self._connect_event.set()
-        # raise ConnectionError(f"Connection open error: {err}")
+        self._channel = None
+        raise ConnectionError(f"Failed to connect to RabbitMQ: {err}")
 
     def _on_connection_closed(self, _unused_connection, reason):
         logger.warning(f"RabbitMQ connection closed: {reason}")
@@ -87,9 +88,17 @@ class RabbitMQClient:
     async def get_channel(self):
         if not self._connection or self._connection.is_closed:
             logger.info("RabbitMQ connection is not open, reconnecting")
-            self._connect()
+            try:
+                self._connect()
+            except Exception as e:
+                logger.error(f"Failed to connect to RabbitMQ: {e}", exc_info=True)
+                raise ConnectionError(f"Failed to connect to RabbitMQ: {e}")
 
-        await self._connect_event.wait()
+        try:
+            await self._connect_event.wait()
+        except asyncio.CancelledError:
+            logger.warning("Connection attempt cancelled")
+            raise ConnectionError("Connection attempt cancelled")
 
         if not self._channel or self._channel.is_closed:
             logger.warning("RabbitMQ channel is not available or closed")

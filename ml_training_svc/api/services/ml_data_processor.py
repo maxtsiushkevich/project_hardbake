@@ -2,6 +2,7 @@ from api.core.logger import logger
 from api.schemas.data_record import DataRecord
 from api.services.model_storage import ModelStorage
 from api.utils.rabbitmq import RabbitMQClient
+from api.schemas.ml import ConsumerStatusEnum
 
 
 class MLDataProcessor:
@@ -12,6 +13,7 @@ class MLDataProcessor:
         self.queue_name = "ml_data_processor_svc.ml_data.training"
         self.consumer_tag = None
         self.channel = None
+        self.consumer_status = ConsumerStatusEnum.NOT_RUNNING
 
     async def start_consuming(self):
         if self.consuming:
@@ -35,15 +37,18 @@ class MLDataProcessor:
                 auto_ack=True
             )
 
+            self.consumer_status = ConsumerStatusEnum.RUNNING
             logger.debug("Consumer started successfully")
-        except Exception as e:
-            logger.debug(f"Failed to start consuming: {e}", exc_info=True)
+        except ConnectionError as e:
+            logger.error(f"RabbitMQ connection error: {str(e)}")
             self._cleanup()
+            self.consumer_status = ConsumerStatusEnum.ERROR
             raise
-
-    def on_channel_closed(self, channel, reason):
-        logger.debug(f"Channel was closed: {reason}")
-        self._cleanup()
+        except Exception as e:
+            logger.error(f"Failed to start consuming: {e}", exc_info=True)
+            self._cleanup()
+            self.consumer_status = ConsumerStatusEnum.ERROR
+            raise
 
     def _cleanup(self):
         self.consuming = False
@@ -57,7 +62,7 @@ class MLDataProcessor:
 
             self.model_storage.add_data(data_record)
         except Exception as e:
-            logger.debug(f"Error processing message: {str(e)}", exc_info=True)
+            logger.error(f"Error processing message: {str(e)}", exc_info=True)
 
     async def stop_consuming(self):
         logger.debug("Stopping message consuming received")
@@ -66,13 +71,28 @@ class MLDataProcessor:
                 self.channel.basic_cancel(self.consumer_tag)
                 logger.debug("Consumer stopped successfully")
             except Exception as e:
-                logger.debug(f"Failed to stop consumer: {e}", exc_info=True)
+                logger.error(f"Failed to stop consumer: {e}", exc_info=True)
 
+        self.consuming = False
         self._cleanup()
+        self.consumer_status = ConsumerStatusEnum.STOPPED
         if self.channel:
             try:
                 await self.channel.close()
             except Exception as e:
-                logger.debug(f"Error closing channel: {e}", exc_info=True)
+                logger.error(f"Error closing channel: {e}", exc_info=True)
             finally:
                 self.channel = None
+
+    def get_consumer_status(self):
+        try:
+            if not self.rabbitmq_client._connection or self.rabbitmq_client._connection.is_closed:
+                if self.consumer_status == ConsumerStatusEnum.RUNNING:
+                    self._cleanup()
+                    self.consumer_status = ConsumerStatusEnum.ERROR
+        except Exception as e:
+            logger.error(f"Error checking RabbitMQ connection state: {str(e)}")
+            self._cleanup()
+            self.consumer_status = ConsumerStatusEnum.ERROR
+        logger.debug(f"Consumer status queried: {self.consumer_status}")
+        return self.consumer_status
