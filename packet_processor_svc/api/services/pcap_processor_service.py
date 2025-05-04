@@ -28,7 +28,12 @@ class PcapProcessorService:
         try:
             upload_id = uuid4()
             logger.debug(f"Starting pcap upload with ID: {upload_id}")
-            status = UploadStatus(status=ProcessStatus.Running, upload_id=upload_id)
+            status = UploadStatus(
+                status=ProcessStatus.Running,
+                upload_id=upload_id,
+                tcp_sessions=0,
+                udp_sessions=0
+            )
 
             await self.redis.update_upload_status(status, upload_id)
             await self.redis.update_streams(StreamSummary(tcp_streams={}, udp_streams={}), upload_id)
@@ -65,7 +70,12 @@ class PcapProcessorService:
 
     async def _on_pcap_file_finished(self, upload_id: UUID):
         logger.debug(f"Finished processing pcap file. upload_id={upload_id}")
-        status = UploadStatus(status=ProcessStatus.Processed, upload_id=upload_id)
+        status = UploadStatus(
+            status=ProcessStatus.Processed,
+            upload_id=upload_id,
+            tcp_sessions=len(self.tcp_streams),
+            udp_sessions=len(self.udp_streams)
+        )
         streams = StreamSummary.from_packets(
             tcp_streams=self.tcp_streams,
             udp_streams=self.udp_streams

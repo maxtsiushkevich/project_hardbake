@@ -43,6 +43,50 @@ async def upload_pcap(file: UploadFile = File(...)):
 
     return result
 
+@router.get("/all",
+            status_code=status.HTTP_200_OK,
+            response_model=list[UploadStatus],
+            responses={
+                200: {"description": "OK"},
+                204: {"description": "No uploads found"},
+            }
+            )
+async def get_all_uploads(start_pos: int | None = None, quantity: int | None = None):
+    logger.info(f"Received request to get all uploads with start_pos={start_pos}, quantity={quantity}")
+    async with RedisConnection() as connection:
+        redis = PcapRedisRepository(connection.redis)
+        pcap_result_service = PcapResultService(redis)
+        try:
+            result = await pcap_result_service.get_all_uploads(start_pos, quantity)
+            logger.debug(f"Retrieved {len(result)} uploads")
+        except HTTPException as e:
+            if e.status_code == status.HTTP_204_NO_CONTENT:
+                logger.debug("No uploads found")
+            raise
+    return result
+
+@router.get("/status/{status}",
+            status_code=status.HTTP_200_OK,
+            response_model=list[UploadStatus],
+            responses={
+                200: {"description": "OK"},
+                204: {"description": "No uploads found with specified status"},
+            }
+            )
+async def get_sniffs_by_status(target_status: ProcessStatus):
+    logger.info(f"Received request to get uploads with status={target_status}")
+    async with RedisConnection() as connection:
+        redis = PcapRedisRepository(connection.redis)
+        pcap_result_service = PcapResultService(redis)
+        try:
+            result = await pcap_result_service.get_uploads_by_status(target_status)
+            logger.debug(f"Retrieved {len(result)} uploads with status {target_status}")
+        except HTTPException as e:
+            if e.status_code == status.HTTP_204_NO_CONTENT:
+                logger.debug(f"No uploads found with status {target_status}")
+            raise
+    return result
+
 
 @router.get("/status/{upload_id}",
             status_code=status.HTTP_200_OK,
@@ -82,6 +126,7 @@ async def send_streams_to_rmq(upload_id: UUID):
         pcap_result_service = PcapResultService(redis)
         try:
             asyncio.create_task(pcap_result_service.send_to_rmq(upload_id))
+            # await pcap_result_service.send_to_rmq(upload_id)
             logger.info(f"Stream sending task created for upload_id={upload_id}")
         except UploadNotFoundError:
             logger.warning(f"Upload not found for RMQ send: {upload_id}")

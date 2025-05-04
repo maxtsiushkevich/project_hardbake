@@ -25,6 +25,8 @@ class TCPFlags(int, Enum):
 class UploadStatus(BaseModel):
     status: ProcessStatus
     upload_id: UUID
+    tcp_sessions: int = 0
+    udp_sessions: int = 0
 
 
 class SendRMQStatus(BaseModel):

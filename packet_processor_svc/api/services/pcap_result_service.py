@@ -14,6 +14,58 @@ class PcapResultService:
     def __init__(self, redis: PcapRedisRepository):
         self.redis = redis
 
+    async def get_all_uploads(self, start_pos: int | None = None, quantity: int | None = None) -> list[UploadStatus]:
+        logger.debug(f"Fetching all uploads with start_pos={start_pos}, quantity={quantity}")
+        keys = await self.redis.connection.keys("*:upload_status")
+        all_uploads = []
+        
+        for key in keys:
+            try:
+                upload_id = UUID(key.decode('utf-8').split(':')[0])
+                upload_status = await self.get_upload_status(upload_id)
+                if upload_status:
+                    all_uploads.append(upload_status)
+            except (UploadNotFoundError, ValueError):
+                continue
+
+        if start_pos is not None and quantity is not None:
+            start = max(0, start_pos)
+            end = min(len(all_uploads), start + quantity)
+            all_uploads = all_uploads[start:end]
+        elif start_pos is not None:
+            all_uploads = all_uploads[start_pos:]
+        elif quantity is not None:
+            all_uploads = all_uploads[:quantity]
+        
+        if not all_uploads:
+            logger.debug("No uploads found")
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        
+        logger.debug(f"Returning {len(all_uploads)} uploads")
+        return all_uploads
+
+    async def get_uploads_by_status(self, target_status: ProcessStatus) -> list[UploadStatus]:
+        logger.debug(f"Fetching uploads with status={target_status}")
+
+        keys = await self.redis.connection.keys("*:upload_status")
+        filtered_uploads = []
+        
+        for key in keys:
+            try:
+                upload_id = UUID(key.decode('utf-8').split(':')[0])
+                upload_status = await self.get_upload_status(upload_id)
+                if upload_status and upload_status.status == target_status:
+                    filtered_uploads.append(upload_status)
+            except (UploadNotFoundError, ValueError):
+                continue
+        
+        if not filtered_uploads:
+            logger.debug(f"No uploads found with status {target_status}")
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
+        
+        logger.debug(f"Returning {len(filtered_uploads)} uploads with status {target_status}")
+        return filtered_uploads
+
     async def get_upload_status(self, upload_id: UUID) -> UploadStatus:
         logger.debug(f"Fetching upload status for upload_id={upload_id}")
         result = await self.redis.get_upload_status(upload_id)
