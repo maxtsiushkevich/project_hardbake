@@ -271,14 +271,14 @@ async def set_min_samples_for_training(min_samples: int):
     return UpdateMinSamples(min_samples=min_samples, status=UpdateStatus.UPDATED)
 
 
-@router.get("/current_settings",
+@router.get("/current_hyperparameters",
             response_model=ModelSettings,
             responses={
                 200: {"description": "OK"},
                 500: {"description": "Internal server error"},
             }
             )
-async def get_current_settings():
+async def get_current_hyperparameters():
     logger.info("Received request: get current model settings")
     try:
         result = await model_storage.get_current_settings()

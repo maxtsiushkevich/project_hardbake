@@ -15,7 +15,7 @@ from api.schemas.ml import TrainingStatus, ModelHyperparameters
 
 
 class ModelStorage:
-    def __init__(self, db_path: str = 'training_data.db'):
+    def __init__(self, db_path: str = './db/training_data.db'):
         self.isolation_forest: Optional[IsolationForest] = None
         self.one_class_svm: Optional[OneClassSVM] = None
         self.training_status: TrainingStatus = TrainingStatus.NOT_STARTED
@@ -50,9 +50,6 @@ class ModelStorage:
         logger.debug("Retrieving current model settings")
         return {
             "hyperparameters": self.hyperparameters,
-            "training_status": self.training_status,
-            "min_samples_for_training": self.min_samples_for_training,
-            "current_samples": self.get_len_of_training_data()
         }
 
     async def get_training_status(self):

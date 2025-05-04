@@ -89,10 +89,6 @@ class ConsumerStatusResponse(BaseModel):
 
 class ModelSettings(BaseModel):
     hyperparameters: ModelHyperparameters
-    min_samples_for_training: int
-    current_samples: int
-    training_status: TrainingStatus
-
 
 class TrainingInfoResponse(BaseModel):
     training_status: TrainingStatus
