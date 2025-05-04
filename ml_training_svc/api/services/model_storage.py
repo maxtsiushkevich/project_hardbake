@@ -1,4 +1,4 @@
-import logging
+import os
 import sqlite3
 from typing import Optional
 import numpy as np
@@ -62,6 +62,7 @@ class ModelStorage:
 
     def _init_db(self):
         try:
+            os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
             conn = sqlite3.connect(self.db_path)
             cursor = conn.cursor()
             cursor.execute('''
