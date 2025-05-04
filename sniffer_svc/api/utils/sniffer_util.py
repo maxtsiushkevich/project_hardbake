@@ -16,12 +16,14 @@ from api.core.logger import logger
 class SnifferUtil:
     def __init__(self):
         self.is_crashed: bool = False
+        self.writers = {}  # Словарь для хранения writer'ов по sniff_id
         logger.debug("SnifferUtil initialized")
 
-    def packet_operator(self, packet, channel, writer=None):
+    def packet_operator(self, packet, channel, sniff_id=None):
         try:
-            if writer:
-                writer.write(packet)
+            # Записываем в файл, если есть writer для этого sniff_id
+            if sniff_id and sniff_id in self.writers:
+                self.writers[sniff_id].write(packet)
                 logger.debug("Packet written to pcap file")
 
             packet_data = PacketData(packet)
@@ -56,11 +58,12 @@ class SnifferUtil:
                 os.makedirs(pcap_dir, exist_ok=True)
                 file_path = os.path.join(pcap_dir, f"{iface}_{sniff_id}.pcapng")
                 writer = PcapNgWriter(file_path)
+                self.writers[sniff_id] = writer  # Сохраняем writer для этого sniff_id
                 logger.debug(f"Writing packets to file: {file_path}")
 
             sniffer = AsyncSniffer(
                 iface=iface,
-                prn=lambda pkt: self.packet_operator(pkt, channel, writer),
+                prn=lambda pkt: self.packet_operator(pkt, channel, sniff_id),
                 filter=filters,
                 lfilter=self._is_crashed
             )
@@ -73,6 +76,10 @@ class SnifferUtil:
             raise e
         except Exception as e:
             logger.debug(f"Unexpected error during start_sniffing: {e}", exc_info=True)
+            # Закрываем writer, если он был создан
+            if write_in_file and sniff_id in self.writers:
+                self.writers[sniff_id].close()
+                del self.writers[sniff_id]
             raise
 
     async def stop_sniffing(self, sniff_id: UUID):
@@ -88,6 +95,16 @@ class SnifferUtil:
             logger.debug(f"RabbitMQ channel closed for sniff_id={sniff_id}")
         except Exception as e:
             logger.debug(f"Error closing RabbitMQ channel for sniff_id={sniff_id}: {e}", exc_info=True)
+
+        # Закрываем writer, если он есть
+        if sniff_id in self.writers:
+            try:
+                self.writers[sniff_id].close()
+                logger.debug(f"PCAPNG writer closed for sniff_id={sniff_id}")
+            except Exception as e:
+                logger.debug(f"Error closing PCAPNG writer for sniff_id={sniff_id}: {e}", exc_info=True)
+            finally:
+                del self.writers[sniff_id]
 
         if sniffer.running:
             sniffer.stop()
