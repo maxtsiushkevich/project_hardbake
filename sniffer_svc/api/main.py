@@ -6,7 +6,6 @@ from api.repository.redis_repository import RedisConnection
 from api.monitoring.prometheus import metrics, instrumentator
 from dotenv import load_dotenv
 
-from api.core.context import rabbitmq_client
 from fastapi.middleware.cors import CORSMiddleware
 from api.core.logger import logger, LOGGING_CONFIG
 
