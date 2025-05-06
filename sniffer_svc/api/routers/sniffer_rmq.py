@@ -113,11 +113,11 @@ async def get_sniff_details(task_id: UUID):
     return SniffDetails(**result.dict())
 
 
-@router.get("/status/{status}",
+@router.get("/status/{target_status}",
             response_model=SniffListResponse,
             responses={
                 200: {"description": "OK"},
-                404: {"description": "There are no sniffing sessions with the specified status was found"},
+                204: {"description": "There are no sniffing sessions with the specified status was found"},
             }
             )
 async def get_sniffs_by_status(target_status: SniffStatus):
@@ -129,7 +129,7 @@ async def get_sniffs_by_status(target_status: SniffStatus):
         results = await sniffer_service.get_by_status(target_status)
         if not results:
             logger.info(f"No sniffing sessions found with status {target_status}")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(status_code=status.HTTP_204_NO_CONTENT)
 
     logger.info(f"Found {len(results)} sessions with status {target_status}")
     return SniffListResponse(sniffs=results, total=len(results))
