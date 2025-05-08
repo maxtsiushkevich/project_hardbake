@@ -12,6 +12,6 @@ config = AuthXConfig(
     JWT_ALGORITHM="ES256",
     JWT_PRIVATE_KEY=PRIVATE_KEY,
     JWT_PUBLIC_KEY=PUBLIC_KEY,
-    JWT_TOKEN_LOCATION=["headers"],
+    JWT_TOKEN_LOCATION=["cookies"],
 )
 auth = AuthX(config=config)
