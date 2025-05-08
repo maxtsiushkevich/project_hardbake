@@ -10,20 +10,26 @@ from api.utils.database import get_db
 from api.schemas.schemas import UserCreate, User as UserSchema
 from api.models.models import User
 
+from fastapi.security import HTTPBearer
+
+security = HTTPBearer()
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 def get_current_user(request: Request, db: Session = Depends(get_db)):
-    token = request.cookies.get("access_token")
-    if not token:
-        logger.warning("No access token found in request cookies")
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        logger.warning("Missing or invalid Authorization header.")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
 
+    token = auth_header[len("Bearer "):]
+
     try:
-        payload = jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
+        payload = jwt.decode(token, config.JWT_PUBLIC_KEY, algorithms=[config.JWT_ALGORITHM])
         user_id = int(payload.get("sub"))
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
@@ -50,13 +56,8 @@ def require_role(role: Role):
     return role_checker
 
 
-@router.post("/token",
-             responses={
-                 401: {"description": "Unauthorized"},
-             }
-             )
+@router.post("/token")
 async def login_for_access_token(
-        response: Response,
         username: str,
         password: str,
         db: Session = Depends(get_db)
@@ -76,22 +77,16 @@ async def login_for_access_token(
         "role": user.role,
         "is_active": user.is_active,
     })
-    response.set_cookie(
-        key="access_token",
-        value=token,
-        httponly=True,
-        secure=True,
-        samesite="lax"
-    )
-    logger.debug(f"Access token set for user {username}.")
-    return {"access_token": token}
+    logger.debug(f"Access token created for user {username}.")
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @router.post("/users/", response_model=UserSchema,
              responses={
                  401: {"description": "Unauthorized"},
                  403: {"description": "Forbidden"},
-             }
+             },
+             dependencies=[Depends(security)]
              )
 def create_new_user(
         user: UserCreate,
@@ -111,7 +106,8 @@ def create_new_user(
 @router.get("/users/me/", response_model=UserSchema,
             responses={
                 401: {"description": "Unauthorized"},
-            }
+            },
+            dependencies=[Depends(security)]
             )
 async def read_users_me(current_user: User = Depends(get_current_user)):
     logger.debug(f"Fetching current user {current_user.username}.")
@@ -122,7 +118,8 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
             responses={
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden"},
-            }
+            },
+            dependencies=[Depends(security)]
             )
 async def admin_demo_route(current_user: User = Depends(require_role(Role.ADMIN))):
     logger.debug(f"User {current_user.username} has admin access.")
@@ -133,7 +130,8 @@ async def admin_demo_route(current_user: User = Depends(require_role(Role.ADMIN)
             responses={
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden"},
-            }
+            },
+            dependencies=[Depends(security)]
             )
 async def user_demo_route(current_user: User = Depends(require_role(Role.USER))):
     logger.debug(f"User {current_user.username} has user access.")
@@ -144,7 +142,8 @@ async def user_demo_route(current_user: User = Depends(require_role(Role.USER)))
             responses={
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden"},
-            }
+            },
+            dependencies=[Depends(security)]
             )
 async def viewer_demo_route(current_user: User = Depends(require_role(Role.VIEWER))):
     logger.debug(f"User {current_user.username} has viewer access.")
@@ -152,7 +151,6 @@ async def viewer_demo_route(current_user: User = Depends(require_role(Role.VIEWE
 
 
 @router.post("/logout")
-async def logout(response: Response):
-    logger.debug("Logging out user and deleting access token.")
-    response.delete_cookie("access_token")
+async def logout():
+    logger.debug("User requested logout (client should discard token).")
     return {"message": "Successfully logged out"}
