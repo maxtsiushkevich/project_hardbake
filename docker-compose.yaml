@@ -16,14 +16,17 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
+
 
   system-info-svc:
     build: ./system_info_svc
     network_mode: host
-    depends_on:
-      - rabbitmq
     environment:
       - ENABLE_METRICS=true
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
 
   packet-processor-svc:
     build: ./packet_processor_svc
@@ -40,6 +43,8 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
 
   ml-data-processor-svc:
     build: ./ml_data_processor_svc
@@ -53,6 +58,8 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
 
   ml-training-svc:
     build: ./ml_training_svc
@@ -66,6 +73,8 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
 
   threat-detection-svc:
     build: ./threat_detection_svc
@@ -79,7 +88,22 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
 
+  auth-svc:
+    build: ./auth_svc
+    ports:
+      - "8008:8008"
+    environment:
+      - ENABLE_METRICS=true
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
+      - ./private_key.pem:/app/private_key.pem:ro
 
   prometheus:
     image: prom/prometheus
@@ -97,6 +121,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana.ini:/etc/grafana/grafana.ini
 
   redis-sniffer-svc:
     image: redis:latest
