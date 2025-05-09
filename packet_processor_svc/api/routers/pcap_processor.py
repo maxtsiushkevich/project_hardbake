@@ -43,6 +43,7 @@ async def upload_pcap(file: UploadFile = File(...)):
 
     return result
 
+
 @router.get("/all",
             status_code=status.HTTP_200_OK,
             response_model=list[UploadStatus],
@@ -64,6 +65,26 @@ async def get_all_uploads(start_pos: int | None = None, quantity: int | None = N
                 logger.debug("No uploads found")
             raise
     return result
+
+
+@router.post("/clear_cache",
+             status_code=status.HTTP_202_ACCEPTED,
+             responses={
+                 202: {"description": "Redis cleanup started"},
+                 500: {"description": "Internal server error"},
+             }
+             )
+async def clear_sniff_cache():
+    logger.info(f"Received request clear Redis cache")
+    async with RedisConnection() as connection:
+        redis = PcapRedisRepository(connection.redis)
+        try:
+            await redis.clear_cache()
+        except Exception as e:
+            logger.error(f"Failed to clear redis cache", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    logger.info(f"Redis cache cleared")
+
 
 @router.get("/status/{status}",
             status_code=status.HTTP_200_OK,

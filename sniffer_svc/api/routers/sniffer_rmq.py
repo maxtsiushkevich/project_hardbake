@@ -46,6 +46,24 @@ async def start_sniff(iface: str, write_in_file: bool = False, filter_params: Sn
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
 
 
+@router.post("/clear_cache",
+             status_code=status.HTTP_202_ACCEPTED,
+             responses={
+                 202: {"description": "Redis cleanup started"},
+                 500: {"description": "Internal server error"},
+             }
+             )
+async def clear_sniff_cache():
+    logger.info(f"Received request clear Redis cache")
+    async with RedisConnection() as connection:
+        redis = RedisRepository(connection.redis)
+        try:
+            await redis.clear_cache()
+        except Exception as e:
+            logger.error(f"Failed to clear redis cache", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    logger.info(f"Redis cache cleared")
+
 @router.patch("/stop",
               response_model=SniffDetails,
               responses={

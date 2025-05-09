@@ -113,3 +113,19 @@ class RedisRepository:
 
         logger.info(f"Fetched {len(sniffs)} sniffs out of {total_keys} total keys.")
         return sniffs
+
+    async def clear_cache(self):
+        try:
+            keys = await self.connection.keys("*")
+            removed_count = 0
+
+            for key in keys:
+                data = await self.connection.get(key)
+                if data:
+                    sniff_details = pickle.loads(data)
+                    if sniff_details.status in {SniffStatus.Stopped, SniffStatus.Crashed}:
+                        await self.connection.delete(key)
+                        removed_count += 1
+            logger.info(f"Cleared {removed_count} sniffs with status Stopped or Crashed.")
+        except Exception as e:
+            raise e

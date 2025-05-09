@@ -84,3 +84,33 @@ class PcapRedisRepository:
         except (pickle.PickleError, TypeError) as e:
             logger.error(f"Error deserializing streams for {upload_id}: {e}", exc_info=True)
             return None
+
+    async def clear_cache(self):
+        try:
+            keys = await self.connection.keys("*:upload_status")
+            removed_count = 0
+
+            for key in keys:
+                data = await self.connection.get(key)
+                if not data:
+                    continue
+
+                try:
+                    status = pickle.loads(data)
+                except (pickle.PickleError, TypeError) as e:
+                    logger.error(f"Error deserializing upload status from key {key}: {e}", exc_info=True)
+                    continue
+
+                if status.status in {ProcessStatus.Processed, ProcessStatus.Crashed}:
+                    upload_id = key.decode().split(":")[0]
+                    related_keys = [
+                        f"{upload_id}:upload_status",
+                        f"{upload_id}:streams",
+                        f"{upload_id}:send_rmq_status"
+                    ]
+                    await self.connection.delete(*related_keys)
+                    removed_count += 1
+            logger.info(f"Cleared {removed_count} upload entries with status Processed or Crashed.")
+        except Exception as e:
+            logger.error(f"Failed to clear redis cache: {e}", exc_info=True)
+            raise e
