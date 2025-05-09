@@ -29,4 +29,4 @@ app.mount("/metrics", metrics, name="Metrics")
 app.include_router(interface_router)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8002, log_config=LOGGING_CONFIG)
+    uvicorn.run(app, host='0.0.0.0', port=8001, log_config=LOGGING_CONFIG)
