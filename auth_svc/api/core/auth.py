@@ -1,11 +1,13 @@
 from authx import AuthX, AuthXConfig
 
+from api.core.logger import logger
+
 with open("private_key.pem", "r") as f:
-    print("Private key loaded")
+    logger.info("Private key loaded")
     PRIVATE_KEY = f.read()
 
 with open("public_key.pem", "r") as f:
-    print("Public key loaded")
+    logger.info("Public key loaded")
     PUBLIC_KEY = f.read()
 
 config = AuthXConfig(

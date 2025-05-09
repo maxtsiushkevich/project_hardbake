@@ -1,11 +1,13 @@
-from fastapi import Depends, HTTPException, status, Request, APIRouter, Response
+from typing import List
+
+from fastapi import Depends, HTTPException, status, Request, APIRouter, Response, Query
 from sqlalchemy.orm import Session
 from jose import jwt
 
 from api.core.auth import config, auth
 from api.core.logger import logger
 from api.core.roles import Role, has_role_access
-from api.services.users import create_user, get_user
+from api.services.users import create_user, get_user, delete_user_by_username, get_users_paginated
 from api.utils.database import get_db
 from api.schemas.schemas import UserCreate, User as UserSchema
 from api.models.models import User
@@ -113,42 +115,78 @@ def create_new_user(
                 401: {"description": "Unauthorized"},
             }
             )
-async def read_users_me(current_user: User = Depends(get_current_user)):
+async def read_my_profile(current_user: User = Depends(get_current_user)):
     logger.debug(f"Fetching current user {current_user.username}.")
     return current_user
 
 
-@router.get("/admin/",
+@router.delete("/users/{username}",
+               responses={
+                   401: {"description": "Unauthorized"},
+                   403: {"description": "Forbidden"},
+                   404: {"description": "User not found"},
+               })
+def delete_user(
+        username: str,
+        current_user: User = Depends(require_role(Role.ADMIN)),
+        db: Session = Depends(get_db)
+):
+    logger.debug(f"Admin user {current_user.username} attempts to delete user {username}.")
+    success = delete_user_by_username(db, username=username)
+    if not success:
+        logger.warning(f"User {username} not found for deletion.")
+        raise HTTPException(status_code=404, detail="User not found")
+    logger.debug(f"User {username} successfully deleted.")
+    return {"message": f"User '{username}' deleted successfully"}
+
+
+@router.get("/users/", response_model=List[UserSchema],
             responses={
                 401: {"description": "Unauthorized"},
                 403: {"description": "Forbidden"},
-            }
-            )
-async def admin_demo_route(current_user: User = Depends(require_role(Role.ADMIN))):
-    logger.debug(f"User {current_user.username} has admin access.")
-    return {"message": "Admin access granted"}
+            })
+def list_users(
+        start_pos: int = Query(0, ge=0),
+        quantity: int = Query(10, gt=0),
+        current_user: User = Depends(require_role(Role.ADMIN)),
+        db: Session = Depends(get_db)
+):
+    logger.debug(f"Admin user {current_user.username} requests user list from {start_pos} with quantity {quantity}.")
+    users = get_users_paginated(db, start_pos=start_pos, quantity=quantity)
+    return users
 
 
-@router.get("/user/",
-            responses={
-                401: {"description": "Unauthorized"},
-                403: {"description": "Forbidden"},
-            }
-            )
-async def user_demo_route(current_user: User = Depends(require_role(Role.USER))):
-    logger.debug(f"User {current_user.username} has user access.")
-    return {"message": "User access granted"}
-
-
-@router.get("/viewer/",
-            responses={
-                401: {"description": "Unauthorized"},
-                403: {"description": "Forbidden"},
-            }
-            )
-async def viewer_demo_route(current_user: User = Depends(require_role(Role.VIEWER))):
-    logger.debug(f"User {current_user.username} has viewer access.")
-    return {"message": "Viewer access granted"}
+# @router.get("/admin/",
+#             responses={
+#                 401: {"description": "Unauthorized"},
+#                 403: {"description": "Forbidden"},
+#             }
+#             )
+# async def admin_demo_route(current_user: User = Depends(require_role(Role.ADMIN))):
+#     logger.debug(f"User {current_user.username} has admin access.")
+#     return {"message": "Admin access granted"}
+#
+#
+# @router.get("/user/",
+#             responses={
+#                 401: {"description": "Unauthorized"},
+#                 403: {"description": "Forbidden"},
+#             }
+#             )
+# async def user_demo_route(current_user: User = Depends(require_role(Role.USER))):
+#     logger.debug(f"User {current_user.username} has user access.")
+#     return {"message": "User access granted"}
+#
+#
+# @router.get("/viewer/",
+#             responses={
+#                 401: {"description": "Unauthorized"},
+#                 403: {"description": "Forbidden"},
+#             }
+#             )
+# async def viewer_demo_route(current_user: User = Depends(require_role(Role.VIEWER))):
+#     logger.debug(f"User {current_user.username} has viewer access.")
+#     return {"message": "Viewer access granted"}
 
 
 @router.post("/logout")
