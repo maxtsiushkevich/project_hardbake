@@ -24,6 +24,7 @@ from pydantic import BaseModel
 
 
 class DataRecord(BaseModel):
+    meta: str
     protocol: int
     bwd_packet_length_max: int
     bwd_packet_length_min: int

@@ -2,7 +2,7 @@ import statistics
 from typing import List, Optional
 
 from scapy.compat import raw
-from scapy.layers.inet import IP
+from scapy.layers.inet import IP, UDP, TCP
 
 from api.core.logger import logger
 from api.schemas.data_record import DataRecord
@@ -87,6 +87,27 @@ class MLParser:
             logger.debug("No valid forward or backward packets found")
             return None
 
+        protocol = stream[0].packet[IP].proto if stream and stream[0].packet.haslayer(IP) else 0
+
+        ip_src = None
+        ip_dst = None
+        sport = None
+        dport = None
+
+        if IP in stream[0].packet:
+            ip_src = stream[0].packet[IP].src
+            ip_dst = stream[0].packet[IP].dst
+        if TCP in stream[0].packet:
+            sport = stream[0].packet[TCP].sport
+            dport = stream[0].packet[TCP].dport
+        if UDP in stream[0].packet:
+            sport = stream[0].packet[UDP].sport
+            dport = stream[0].packet[UDP].dport
+
+        duration = stream[-1].timestamp - stream[0].timestamp
+
+        meta = f"{ip_src}:{ip_dst}:{sport}:{dport}:{protocol}:{stream[0].timestamp}:{duration}"
+
         fwd_sizes = PacketStatistics.lengths(forward)
         bwd_sizes = PacketStatistics.lengths(backward)
         all_sizes = fwd_sizes + bwd_sizes
@@ -121,9 +142,8 @@ class MLParser:
 
         bwd_min, bwd_max, bwd_mean, bwd_std = PacketStatistics.stats(bwd_sizes)
 
-        protocol = stream[0].packet[IP].proto if stream and stream[0].packet.haslayer(IP) else 0
-
         record = DataRecord(
+            meta=meta,
             protocol=protocol,
             bwd_packet_length_max=bwd_max,
             bwd_packet_length_min=bwd_min,
