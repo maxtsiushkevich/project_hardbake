@@ -22,11 +22,8 @@ class Meta(Base):
 class Features(Base):
     __tablename__ = "features"
 
-    id = Column(Integer, primary_key=True, index=True)
-    meta_id = Column(Integer, ForeignKey("meta.id"))
-    # meta = Column(String)
+    id = Column(Integer, ForeignKey("meta.id"), primary_key=True, index=True)
     protocol = Column(Integer)
-
     bwd_packet_length_max = Column(Integer)
     bwd_packet_length_min = Column(Integer)
     bwd_packet_length_mean = Column(Float)

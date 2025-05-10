@@ -1,12 +1,12 @@
 import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.models.models import Features, Meta
 from api.schemas.data_record import DataRecord
 
 
-def add_data_record(data_record: DataRecord, db):
+async def add_data_record(data_record: DataRecord, db: AsyncSession):
     try:
-
         meta = Meta(
             src_ip="192.168.0.1",
             dst_ip="192.168.0.100",
@@ -17,11 +17,11 @@ def add_data_record(data_record: DataRecord, db):
             duration=1.23
         )
         db.add(meta)
-        db.commit()
+        await db.commit()
+        await db.refresh(meta)
 
-    # Создаём и добавляем Features, ссылаясь на Metadata
         features = Features(
-            meta_id=meta.id,
+            id=meta.id,
             protocol=6,
             bwd_packet_length_max=1000,
             bwd_packet_length_min=500,
@@ -42,10 +42,8 @@ def add_data_record(data_record: DataRecord, db):
             idle_max=30
         )
         db.add(features)
-        db.commit()
+        await db.commit()
         print("Sample data added.")
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         print(f"Error adding sample data: {e}")
-    finally:
-        db.close()

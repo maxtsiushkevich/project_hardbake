@@ -9,18 +9,21 @@ from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.notification_router import router as notification_router
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.utils.database import Base, engine
+
 load_dotenv()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # startup
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     # shutdown
 
 
 app = FastAPI(lifespan=lifespan, title='Project Hardbake. Notification Service')
-
-
 
 app.add_middleware(
     CORSMiddleware,

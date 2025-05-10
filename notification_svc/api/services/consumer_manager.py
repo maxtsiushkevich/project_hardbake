@@ -6,7 +6,6 @@ from api.schemas.data_record import DataRecord
 from api.schemas.schemas import ConsumingStatusEnum
 from api.services.data_storage import add_data_record
 from api.utils.database import get_db
-# from api.services.detection_service import DetectionService
 from api.utils.rabbitmq import RabbitMQClient
 
 
@@ -50,8 +49,8 @@ class ConsumerManager:
             data_record = DataRecord.model_validate_json(body)
             logger.debug(f"Processing data record: {data_record}")
 
-            with get_db() as db:
-                add_data_record(data_record, db)
+            async with get_db() as db:
+                await add_data_record(data_record, db)
 
             logger.debug("Data record processed and added to database")
 
@@ -96,4 +95,3 @@ class ConsumerManager:
             self.status = ConsumingStatusEnum.ERROR
         logger.debug(f"Consumer status queried: {self.status}")
         return self.status
-

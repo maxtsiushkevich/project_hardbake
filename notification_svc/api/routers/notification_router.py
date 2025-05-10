@@ -7,7 +7,6 @@ from api.schemas.schemas import StartStopResponse, ConsumingsStatusResponse, Con
 from api.services.consumer_manager import ConsumerManager
 from api.utils.rabbitmq import RabbitMQClient
 
-
 router = APIRouter(prefix="/notification", tags=["Notifications"])
 
 processor = ConsumerManager(RabbitMQClient())
@@ -21,7 +20,7 @@ processor = ConsumerManager(RabbitMQClient())
                  503: {"description": "RabbitMQ is not available"},
              }
              )
-async def start_detect():
+async def start_consuming():
     logger.info("Received request to start detection")
     try:
         await processor.start()
@@ -43,7 +42,7 @@ async def start_detect():
                  500: {"description": "Internal Server Error"},
              }
              )
-async def stop_detect():
+async def stop_consuming():
     logger.info("Received request to stop detection")
     try:
         await processor.stop()
@@ -58,7 +57,7 @@ async def stop_detect():
 
 
 @router.get("/status", response_model=ConsumingsStatusResponse)
-async def get_detection_status():
+async def get_consuming_status():
     detection_status = processor.get_status()
     logger.info(f"Detection status requested, returning: {detection_status}")
     return ConsumingsStatusResponse(status=detection_status)
