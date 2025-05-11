@@ -2,16 +2,7 @@ FROM python:3.12-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --no-cache \
-    gcc \
-    musl-dev \
-    linux-headers \
-    g++ \
-    make \
-    libstdc++ \
-    openblas-dev
-
-RUN apk add --no-cache libgomp
+RUN apk add --no-cache gcc musl-dev linux-headers
 
 COPY requirements.txt .
 
@@ -21,17 +12,12 @@ FROM python:3.12-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache \
-    libstdc++ \
-    openblas \
-    libgomp
-
 COPY --from=builder /root/.local /root/.local
+
 COPY api/ ./api/
 
 ENV PATH=/root/.local/bin:$PATH
-ENV LD_LIBRARY_PATH=/usr/lib:/usr/local/lib
 
-EXPOSE 8005
+EXPOSE 8008
 
 CMD ["python", "-m", "api.main"]

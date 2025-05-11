@@ -1,28 +1,30 @@
 version: "3"
 
 services:
-
   sniffer-svc:
     build: ./sniffer_svc
-    network_mode: host
+#    network_mode: host
+    ports:
+      - "8000:8000"
     depends_on:
       - redis-sniffer-svc
       - rabbitmq
     environment:
-      - REDIS_HOST=localhost
+      - REDIS_HOST=redis-sniffer-svc
       - REDIS_PORT=6379
       - ENABLE_METRICS=true
-      - RABBITMQ_HOST=localhost
+      - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
     volumes:
       - ./public_key.pem:/app/public_key.pem:ro
 
-
   system-info-svc:
     build: ./system_info_svc
-    network_mode: host
+#    network_mode: host
+    ports:
+      - "8001:8001"
     environment:
       - ENABLE_METRICS=true
     volumes:
@@ -91,16 +93,26 @@ services:
     volumes:
       - ./public_key.pem:/app/public_key.pem:ro
 
-  auth-svc:
-    build: ./auth_svc
+  notification-svc:
+    build: ./notification_svc
     ports:
-      - "8008:8008"
+      - "8006:8006"
     environment:
       - ENABLE_METRICS=true
       - RABBITMQ_HOST=rabbitmq
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+    volumes:
+      - ./public_key.pem:/app/public_key.pem:ro
+      - ./private_key.pem:/app/private_key.pem:ro
+
+  auth-svc:
+    build: ./auth_svc
+    ports:
+      - "8008:8008"
+    environment:
+      - ENABLE_METRICS=true
     volumes:
       - ./public_key.pem:/app/public_key.pem:ro
       - ./private_key.pem:/app/private_key.pem:ro
