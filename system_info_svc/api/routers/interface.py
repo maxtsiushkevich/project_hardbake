@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 
 from api.core.logger import logger
 from api.exceptions.exceptions import InterfaceNotFoundError
 from api.services.interface_service import NetworkInterfacesService, NetworkInterface
 from api.schemas.interface import NetworkInterfaceSchema, InterfacesListResponse, InterfaceInfo, InterfaceStats
+from api.auth.auth import TokenUser, require_role, Role
 
 router = APIRouter(prefix="/interfaces", tags=["Interfaces"])
 
@@ -30,8 +31,9 @@ async def get_interfaces_list():
             responses={
                 200: {"description": "OK"},
                 404: {"description": "Interfaces not found"},
-            })
-async def get_interfaces():
+            },
+            description="Required role: Admin")
+async def get_interfaces(current_user: TokenUser = Depends(require_role(Role.ADMIN))):
     logger.info("Fetching detailed interface information for all interfaces")
     interfaces = NetworkInterfacesService.get_interfaces_json()
     if not interfaces:
