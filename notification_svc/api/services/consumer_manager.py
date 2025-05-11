@@ -3,7 +3,7 @@ import asyncio
 from api.core.logger import logger
 from api.exceptions.exceptions import RabbitMQError
 from api.schemas.data_record import DataRecord
-from api.schemas.schemas import ConsumingStatusEnum
+from api.schemas.consumer import ConsumingStatusEnum
 from api.services.data_storage import add_data_record
 from api.utils.database import get_db
 from api.utils.rabbitmq import RabbitMQClient
@@ -47,7 +47,7 @@ class ConsumerManager:
     async def process_message(self, channel, method, properties, body):
         try:
             data_record = DataRecord.model_validate_json(body)
-            logger.debug(f"Processing data record: {data_record}")
+            logger.debug(f"еProcessing data record: {data_record}")
 
             async with get_db() as db:
                 await add_data_record(data_record, db)

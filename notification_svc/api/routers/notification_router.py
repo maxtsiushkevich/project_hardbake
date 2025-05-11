@@ -3,7 +3,7 @@ from starlette import status
 
 from api.core.logger import logger
 from api.exceptions.exceptions import RabbitMQError
-from api.schemas.schemas import StartStopResponse, ConsumingsStatusResponse, ConsumingStatusEnum
+from api.schemas.consumer import StartStopResponse, ConsumingsStatusResponse, ConsumingStatusEnum
 from api.services.consumer_manager import ConsumerManager
 from api.utils.rabbitmq import RabbitMQClient
 

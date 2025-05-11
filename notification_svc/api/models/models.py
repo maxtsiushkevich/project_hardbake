@@ -14,7 +14,7 @@ class Meta(Base):
     dst_port = Column(Integer, nullable=False)
     proto = Column(Integer, nullable=False)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
-    duration = Column(Float)  # duration in seconds
+    duration = Column(Float)
 
     features = relationship("Features", back_populates="meta")
 

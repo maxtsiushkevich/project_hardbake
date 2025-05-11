@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from api.core.logger import LOGGING_CONFIG
 from api.monitoring.prometheus import metrics, instrumentator
 from api.routers.notification_router import router as notification_router
+from api.routers.metadata_router import router as meta_router
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.utils.database import Base, engine
@@ -38,6 +39,7 @@ instrumentator.instrument(app, metric_namespace="notification_svc").expose(app)
 app.mount("/metrics", metrics)
 
 app.include_router(notification_router)
+app.include_router(meta_router)
 
 if __name__ == '__main__':
     uvicorn.run(app, host='0.0.0.0', port=8006, log_config=LOGGING_CONFIG)
