@@ -124,7 +124,7 @@ services:
       - "9090:9090"
     volumes:
       - prometheus_data:/prometheus
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
     image: grafana/grafana
@@ -133,7 +133,7 @@ services:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana.ini:/etc/grafana/grafana.ini
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
 
   redis-sniffer-svc:
     image: redis:latest
@@ -172,10 +172,10 @@ volumes:
     driver_opts:
       o: bind
       type: none
-      device: ./monitoring/prometheus_data
+      device: ./prometheus
   grafana_data:
     driver: local
     driver_opts:
       o: bind
       type: none
-      device: ./monitoring/grafana_data
+      device: ./grafana
