@@ -1,28 +1,37 @@
-## It is a powerful component easy-customizable intrusion detection system.
+# Powerful component easy-customizable intrusion detection system.
 
-### To generate keys for Auth
-``` openssl ecparam -genkey -name prime256v1 -noout -out private_key.pem ```
+## Description 
+It is a modular intrusion detection system based on machine learning. It implements a full cycle of data collection and processing. Each module can be used separately as a container. Additional modules (report generators, etc.) can also be easily added.
 
-``` openssl ec -in private_key.pem -pubout -out public_key.pem ```
-
-### Default user for Auth
-username: ``admin``
-
-password: ``admin``
-
-### Deploy from Docker-compose 
+## Deploy from Docker-compose 
 ``docker-compose -p project up -d ``
 
-### Dashboard for Grafana 
-Dashboard JSON in ``/grafana/grafana_dashboard.json``
+## Enviroment
 
-## Services API
-Просмотр с localhost
-+ Модуль перехвата трафика [API](http://localhost:8000/docs)
-+ Модуль предоставления информации о системе хоста [API](http://localhost:8001/docs)
-+ Модуль обработки сетевых пакетов [API](http://localhost:8002/docs)
-+ Модуль обработки данных для моделей машинного обучения [API](http://localhost:8003/docs)
-+ Модуль тренировки моделей машинного обучения [API](http://localhost:8004/docs)
-+ Модуль обнаружения угроз [API](http://localhost:8005/docs)
-+ Модуль оповещения об обнаруженных угрозах [API](http://localhost:8006/docs)
-+ Сервис авторизации [API](http://localhost:8008/docs)
+### Keys for Auth
+Authentication uses a pair of private and public keys. Only the authentication service should have access to the private key. Other modules should only have access to the public key.
+
+``` bash
+ openssl ecparam -genkey -name prime256v1 -noout -out private_key.pem 
+ ```
+
+``` bash
+ openssl ec -in private_key.pem -pubout -out public_key.pem 
+ ```
+
+### Default user for Auth
+It is recommended to create your own admin account and delete the starter account.
+
+``username: admin``
+
+``password: admin``
+
+### Deploy from Docker-compose 
+``` bash
+docker-compose -p project up -d 
+```
+
+### Dashboard for Grafana 
+Import dashboards from Grafana. If you already have Grafana in your infrastructure, remove it from the docker-compose file.
+
+Dashboard JSON in ``/grafana/grafana_dashboard.json``
