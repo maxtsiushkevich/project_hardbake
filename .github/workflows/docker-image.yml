@@ -1,0 +1,34 @@
+name: Deploy Docker Compose Stack
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install OpenSSL & Docker Compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssl docker-compose
+
+      - name: Generate EC keys
+        run: |
+          openssl ecparam -genkey -name prime256v1 -noout -out private_key.pem
+          openssl ec -in private_key.pem -pubout -out public_key.pem
+
+      - name: Distribute keys to service folders
+        run: |
+          for dir in sniffer_svc system_info_svc packet_processor_svc ml_data_processor_svc ml_training_svc threat_detection_svc notification_svc auth_svc; do
+            cp private_key.pem ./$dir/private_key.pem || true  # Some services may not need private
+            cp public_key.pem ./$dir/public_key.pem
+          done
+
+      - name: Build and run Docker Compose
+        run: docker-compose up -d --build
