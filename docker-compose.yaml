@@ -101,7 +101,6 @@ services:
       - RABBITMQ_PASSWORD=guest
     volumes:
       - ./public_key.pem:/app/public_key.pem:ro
-      - ./private_key.pem:/app/private_key.pem:ro
 
   auth-svc:
     build: ./auth_svc
