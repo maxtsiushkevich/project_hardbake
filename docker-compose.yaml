@@ -3,17 +3,15 @@ version: "3"
 services:
   sniffer-svc:
     build: ./sniffer_svc
-#    network_mode: host
-    ports:
-      - "8000:8000"
+    network_mode: host
     depends_on:
       - redis-sniffer-svc
       - rabbitmq
     environment:
-      - REDIS_HOST=redis-sniffer-svc
+      - REDIS_HOST=localhost
       - REDIS_PORT=6379
       - ENABLE_METRICS=true
-      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_HOST=localhost
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
@@ -22,9 +20,7 @@ services:
 
   system-info-svc:
     build: ./system_info_svc
-#    network_mode: host
-    ports:
-      - "8001:8001"
+    network_mode: host
     environment:
       - ENABLE_METRICS=true
     volumes:
