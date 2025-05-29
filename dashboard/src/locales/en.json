@@ -1,0 +1,474 @@
+{
+  "nav": {
+    "sniffer": "Sniffer",
+    "systemInfo": "System Info",
+    "packetProcessor": "Packet Processor",
+    "mlDataProcessor": "ML Data Processor",
+    "mlTraining": "ML Training",
+    "threatDetection": "Threat Detection",
+    "statistics": "Statistics",
+    "notifications": "Notifications",
+    "profile": "Profile",
+    "admin": "Admin Panel",
+    "about": "About"
+  },
+  "common": {
+    "login": "Login",
+    "logout": "Logout",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning"
+  },
+  "auth": {
+    "loginTitle": "Login to Dashboard",
+    "welcome": "Welcome",
+    "signInPrompt": "Please sign in to continue",
+    "username": "Username",
+    "usernamePlaceholder": "Enter your username",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "login": "Login",
+    "loggingIn": "Logging in...",
+    "errors": {
+      "invalidCredentials": "Invalid username or password",
+      "generalError": "An error occurred. Please try again."
+    }
+  },
+  "profile": {
+    "title": "User Profile",
+    "personalInfo": "Personal Information",
+    "settings": "Settings",
+    "changePassword": "Change Password",
+    "userInfo": {
+      "title": "User Information",
+      "username": "Username",
+      "role": "Role",
+      "status": "Status",
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "loading": "Loading profile information..."
+  },
+  "admin": {
+    "title": "Admin Panel",
+    "createUser": {
+      "title": "Create New User",
+      "username": "Username",
+      "password": "Password",
+      "role": "Role",
+      "roles": {
+        "admin": "Admin",
+        "user": "User",
+        "viewer": "Viewer"
+      },
+      "submit": "Create User"
+    },
+    "users": {
+      "title": "Users",
+      "table": {
+        "username": "Username",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+      },
+      "actions": {
+        "delete": "Delete",
+        "deleteConfirm": "Are you sure you want to delete user {username}?"
+      }
+    },
+    "roles": "Roles",
+    "permissions": "Permissions",
+    "systemSettings": "System Settings"
+  },
+  "sniffer": {
+    "title": "Sniffer Service",
+    "interface": {
+      "label": "Network Interface",
+      "select": "Select Interface"
+    },
+    "writeToFile": "Write to File",
+    "filterParams": {
+      "title": "Filter Parameters",
+      "srcIp": "Source IP",
+      "dstIp": "Destination IP",
+      "protocol": "Protocol",
+      "anyProtocol": "Any Protocol",
+      "srcPort": "Source Port",
+      "dstPort": "Destination Port"
+    },
+    "buttons": {
+      "start": "Start Sniffing",
+      "stop": "Stop Sniffing",
+      "clear": "Clear",
+      "refresh": "Refresh"
+    },
+    "sessions": {
+      "title": "Sniffing Sessions",
+      "filterByStatus": "Filter by Status",
+      "allStatuses": "All Statuses",
+      "running": "Running",
+      "stopped": "Stopped",
+      "crashed": "Crashed",
+      "noSessions": "No sniffing sessions found",
+      "interface": "Interface",
+      "started": "Started",
+      "ended": "Ended",
+      "duration": "Duration",
+      "status": "Status"
+    },
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page",
+      "of": "of"
+    },
+    "validation": {
+      "invalidIp": "Invalid IP address format"
+    }
+  },
+  "systemInfo": {
+    "title": "System Information",
+    "interfaces": {
+      "title": "Network Interfaces",
+      "loading": "Loading interfaces...",
+      "noInterfaces": "No network interfaces found",
+      "showDetails": "Show Details",
+      "hideDetails": "Hide Details",
+      "networkInfo": "Network Information",
+      "statistics": "Statistics",
+      "ipv4": "IPv4",
+      "netmask": "Netmask",
+      "ipv6": "IPv6",
+      "mac": "MAC",
+      "bytesSent": "Bytes Sent",
+      "bytesReceived": "Bytes Received",
+      "packetsSent": "Packets Sent",
+      "packetsReceived": "Packets Received",
+      "errorsIn": "Errors In",
+      "errorsOut": "Errors Out",
+      "droppedIn": "Dropped In",
+      "droppedOut": "Dropped Out"
+    },
+    "errors": {
+      "notFound": "No network interfaces found",
+      "invalidRequest": "Invalid request parameters",
+      "loadFailed": "Failed to load network interfaces"
+    },
+    "buttons": {
+      "refresh": "Refresh"
+    }
+  },
+  "packetProcessor": {
+    "title": "Packet Processor",
+    "upload": {
+      "title": "Upload PCAP File",
+      "chooseFile": "Choose file...",
+      "button": "Upload"
+    },
+    "uploads": {
+      "title": "Recent Uploads",
+      "noUploads": "No uploads found",
+      "uploadId": "Upload ID",
+      "status": "Status",
+      "tcpSessions": "TCP Sessions",
+      "udpSessions": "UDP Sessions",
+      "sendToRmq": "Send to RMQ",
+      "rmqError": "Failed to send to RMQ"
+    },
+    "filter": {
+      "allStatuses": "All Statuses",
+      "running": "Running",
+      "processed": "Processed",
+      "crashed": "Crashed"
+    },
+    "buttons": {
+      "clear": "Clear",
+      "refresh": "Refresh",
+      "previous": "Previous",
+      "next": "Next"
+    },
+    "pagination": {
+      "page": "Page",
+      "of": "of"
+    },
+    "consumer": {
+      "title": "Consumer Management",
+      "start": "Start Consumer",
+      "stop": "Stop Consumer",
+      "notRunning": "Not running",
+      "running": "Running",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "errors": {
+      "uploadFailed": "Error uploading file",
+      "loadFailed": "Error loading uploads",
+      "rmqFailed": "Error sending to RMQ",
+      "consumerStartFailed": "Error starting consumer",
+      "consumerStopFailed": "Error stopping consumer",
+      "statusLoadFailed": "Error loading consumer status",
+      "clearCacheFailed": "Error clearing cache"
+    }
+  },
+  "mlDataProcessor": {
+    "title": "ML Data Processor",
+    "consumer": {
+      "title": "Consumer Management",
+      "start": "Start Consumer",
+      "stop": "Stop Consumer",
+      "notRunning": "Not running",
+      "running": "Running",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "buttons": {
+      "refresh": "Refresh"
+    },
+    "errors": {
+      "startFailed": "Error starting consumer",
+      "stopFailed": "Error stopping consumer",
+      "statusLoadFailed": "Error loading consumer status"
+    }
+  },
+  "mlTraining": {
+    "title": "ML Training",
+    "consumer": {
+      "title": "Consumer Management",
+      "start": "Start Consuming",
+      "stop": "Stop Consuming",
+      "notRunning": "Not running",
+      "running": "Running",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "training": {
+      "title": "Training Management",
+      "start": "Start Training",
+      "status": "Training Status",
+      "collectedSamples": "Collected Samples",
+      "requiredSamples": "Required Samples",
+      "minSamples": "Minimum Samples",
+      "update": "Update"
+    },
+    "modelSettings": {
+      "title": "Model Settings",
+      "refresh": "Refresh Settings",
+      "isolationForest": {
+        "title": "Isolation Forest",
+        "description": "Anomaly detection using isolation-based approach",
+        "updateParams": "Update Parameters",
+        "params": {
+          "nEstimators": {
+            "name": "Number of Estimators",
+            "description": "Number of trees in the forest"
+          },
+          "contamination": {
+            "name": "Contamination",
+            "description": "Expected proportion of outliers"
+          },
+          "nJobs": {
+            "name": "Number of Jobs",
+            "description": "Number of parallel jobs (-1 for all cores)"
+          }
+        }
+      },
+      "oneClassSvm": {
+        "title": "One Class SVM",
+        "description": "Anomaly detection using support vector machines",
+        "updateParams": "Update Parameters",
+        "params": {
+          "nu": {
+            "name": "Nu",
+            "description": "Upper bound on fraction of training errors"
+          },
+          "kernel": {
+            "name": "Kernel",
+            "description": "Kernel type for SVM"
+          },
+          "gamma": {
+            "name": "Gamma",
+            "description": "Kernel coefficient"
+          }
+        }
+      }
+    },
+    "modelManagement": {
+      "title": "Model Management",
+      "download": "Download Models",
+      "upload": "Upload Models"
+    },
+    "modal": {
+      "updateParams": "Update Parameters",
+      "cancel": "Cancel",
+      "save": "Save Changes"
+    },
+    "buttons": {
+      "refresh": "Refresh"
+    },
+    "errors": {
+      "startConsumingFailed": "Error starting consumer",
+      "stopConsumingFailed": "Error stopping consumer",
+      "statusLoadFailed": "Error loading consumer status",
+      "startTrainingFailed": "Error starting training",
+      "statusLoadFailed": "Error loading training status",
+      "settingsLoadFailed": "Error loading model settings",
+      "settingsUpdateFailed": "Error updating model settings",
+      "modelDownloadFailed": "Error downloading models",
+      "modelUploadFailed": "Error uploading models"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "all": "All Notifications",
+    "unread": "Unread",
+    "read": "Read",
+    "markAllRead": "Mark All as Read",
+    "deleteAll": "Delete All",
+    "noNotifications": "No notifications",
+    "types": {
+      "info": "Information",
+      "success": "Success",
+      "warning": "Warning",
+      "error": "Error"
+    },
+    "actions": {
+      "markAsRead": "Mark as Read",
+      "delete": "Delete",
+      "view": "View"
+    },
+    "time": {
+      "justNow": "Just now",
+      "minutesAgo": "minutes ago",
+      "hoursAgo": "hours ago",
+      "daysAgo": "days ago"
+    },
+    "consuming": {
+      "title": "Consuming Threats Information",
+      "start": "Start Consuming",
+      "stop": "Stop Consuming"
+    },
+    "meta": {
+      "title": "Meta Data",
+      "filters": {
+        "srcIp": "Source IP",
+        "dstIp": "Destination IP",
+        "srcPort": "Source Port",
+        "dstPort": "Destination Port",
+        "protocol": "Protocol",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "minDuration": "Min Duration",
+        "maxDuration": "Max Duration",
+        "apply": "Apply Filters",
+        "clear": "Clear Filters"
+      },
+      "table": {
+        "id": "ID",
+        "srcIp": "Source IP",
+        "dstIp": "Destination IP",
+        "srcPort": "Source Port",
+        "dstPort": "Destination Port",
+        "protocol": "Protocol",
+        "timestamp": "Timestamp",
+        "duration": "Duration",
+        "actions": "Actions",
+        "viewDetails": "View Details"
+      },
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page",
+        "of": "of"
+      },
+      "details": {
+        "title": "Details",
+        "close": "Close"
+      }
+    }
+  },
+  "threatDetection": {
+    "title": "Threat Detection",
+    "detection": {
+      "title": "Detection Management",
+      "start": "Start Detection",
+      "stop": "Stop Detection",
+      "notRunning": "Not running",
+      "running": "Running",
+      "stopped": "Stopped",
+      "error": "Error"
+    },
+    "batch": {
+      "title": "Batch Size Settings",
+      "label": "Batch Size",
+      "current": "Current Batch Size",
+      "update": "Update"
+    },
+    "model": {
+      "title": "Model Management",
+      "upload": "Upload Models"
+    },
+    "buttons": {
+      "refresh": "Refresh Status"
+    },
+    "errors": {
+      "startFailed": "Error starting detection",
+      "stopFailed": "Error stopping detection",
+      "statusLoadFailed": "Error loading detection status",
+      "batchSizeUpdateFailed": "Error updating batch size",
+      "batchSizeLoadFailed": "Error loading batch size",
+      "modelUploadFailed": "Error uploading models"
+    }
+  },
+  "about": {
+    "title": "About Project",
+    "overview": {
+      "title": "Project Overview",
+      "description": "This dashboard provides a comprehensive interface for network security analysis and threat detection. It combines packet sniffing, machine learning processing, and real-time threat detection capabilities to help monitor and protect your network infrastructure."
+    },
+    "features": {
+      "title": "Features",
+      "items": {
+        "sniffing": "Real-time packet sniffing and analysis",
+        "systemInfo": "System information monitoring",
+        "packetProcessing": "Advanced packet processing capabilities",
+        "mlProcessing": "Machine learning data processing",
+        "mlTraining": "ML model training interface",
+        "threatDetection": "Real-time threat detection"
+      }
+    },
+    "techStack": {
+      "title": "Technology Stack",
+      "description": "Built with modern web technologies including Vue.js, providing a responsive and intuitive user interface. The backend integrates with powerful network analysis tools and machine learning frameworks."
+    },
+    "services": {
+      "title": "Services",
+      "refresh": "Refresh",
+      "port": "Port",
+      "status": "Status",
+      "items": {
+        "sniffer": "Sniffer Service",
+        "systemInfo": "System Information Service",
+        "packetProcessor": "Packet Processor Service",
+        "mlDataProcessor": "ML Data Processor Service",
+        "mlTraining": "ML Training Service",
+        "threatDetection": "Threat Detection Service"
+      },
+      "status": {
+        "running": "Running",
+        "notAvailable": "Not Available",
+        "checking": "Checking..."
+      }
+    }
+  }
+} 
