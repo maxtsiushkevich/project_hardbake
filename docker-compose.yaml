@@ -121,6 +121,11 @@ services:
       - prometheus_data:/prometheus
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "8010:8010"
+
   grafana:
     image: grafana/grafana
     container_name: grafana
