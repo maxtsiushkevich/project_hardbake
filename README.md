@@ -19,7 +19,7 @@ Authentication uses a pair of private and public keys. Only the authentication s
  openssl ec -in private_key.pem -pubout -out public_key.pem 
  ```
 ### RabbitMQ
-The required RabbitMQ configuration is contained in ``rabbitmq/rabbit_conf.json``. When running via docker-compose, it will be automatically applied.****
+The required RabbitMQ configuration is contained in ``rabbitmq/rabbit_conf.json``. When running via docker-compose, it will be automatically applied.
 
 ### Dashboard for Grafana 
 Import dashboards from Grafana. If you already have Grafana in your infrastructure, remove it from the docker-compose file.
