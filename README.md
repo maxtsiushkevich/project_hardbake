@@ -1,5 +1,9 @@
 # Powerful component easy-customizable intrusion detection system.
 
+## User guides
+[User guide](UserGuide_EN.pdf)
+[Руководство пользователя](UserGuide_RU.pdf)
+
 ## Description 
 It is a modular intrusion detection system based on machine learning. It implements a full cycle of data collection and processing. Each module can be used separately as a container. Additional modules (report generators, etc.) can also be easily added.
 
